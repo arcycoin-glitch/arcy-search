@@ -662,6 +662,7 @@ fetch(
 let data={};
 let supplyData={};
 let unlockData={};
+let marketData={};
 
 
 try{
@@ -684,6 +685,18 @@ data.error || "Token scan failed"
 
 
 const t=data.token || {};
+
+// Contract-first market lookup. The server endpoint verifies the Arc contract
+// against CoinGecko before returning circulating supply.
+try{
+const marketResponse=await fetch(
+"/api/market?address="+encodeURIComponent(value),
+{cache:"no-store"}
+);
+marketData=await marketResponse.json();
+}catch(e){
+marketData={};
+}
 
 
 if(t.symbol){
@@ -744,14 +757,13 @@ knownBurned.textContent=
 
 
 if(
-supplyData.circulating &&
-supplyData.circulating.amount!==null
+marketData.ok &&
+marketData.circulatingSupply!==null &&
+marketData.circulatingSupply!==undefined
 ){
 
 circulating.textContent=
-compactNumber(
-supplyData.circulating.amount
-)
+compactNumber(marketData.circulatingSupply)
 +
 (t.symbol ? " "+t.symbol : "");
 

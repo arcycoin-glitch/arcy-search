@@ -49,9 +49,9 @@ body{min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(--text);b
 <article class="card supply">
 <div class="card-icon">🔓</div><h2>Supply & Unlock</h2>
 <div class="row"><span>Total Supply</span><b id="totalSupply">—</b></div>
-<div class="row"><span>Circulating</span><b>—</b></div>
-<div class="row"><span>Locked</span><b>—</b></div>
-<div class="row"><span>Next Unlock</span><b>—</b></div>
+<div class="row"><span>Circulating*</span><b id="circulating">—</b></div>
+<div class="row"><span>Known Burned</span><b id="knownBurned">—</b></div>
+<div class="row"><span>Next Unlock</span><b id="nextUnlock">—</b></div>
 <div class="badge" id="supplyBadge">NOT SCANNED</div><span class="details">View details →</span>
 </article>
 <article class="card whales">
@@ -92,6 +92,9 @@ const tokenMeta=document.getElementById("tokenMeta");
 const scanStatus=document.getElementById("scanStatus");
 const totalSupply=document.getElementById("totalSupply");
 const supplyBadge=document.getElementById("supplyBadge");
+const circulating=document.getElementById("circulating");
+const knownBurned=document.getElementById("knownBurned");
+const nextUnlock=document.getElementById("nextUnlock");
 const helper=document.getElementById("helper");
 
 function compactNumber(value){
@@ -112,6 +115,9 @@ async function startScan(){
   tokenName.textContent="Scanning token…";
   tokenMeta.textContent="";
   totalSupply.textContent="…";
+  circulating.textContent="…";
+  knownBurned.textContent="…";
+  nextUnlock.textContent="…";
   supplyBadge.className="badge";
   supplyBadge.textContent="SCANNING";
   setState("","SCANNING");
@@ -126,14 +132,25 @@ async function startScan(){
     tokenName.textContent=(t.name||"Unknown Token")+(t.symbol?" ("+t.symbol+")":"");
     tokenMeta.textContent="Arc · Decimals: "+(t.decimals ?? "—")+" · Source: "+(data.source||"Arc RPC");
     totalSupply.textContent=compactNumber(t.totalSupply)+(t.symbol?" "+t.symbol:"");
+    const s=data.supply||{};
+    circulating.textContent=s.circulatingAfterKnownBurns
+      ? compactNumber(s.circulatingAfterKnownBurns)+(t.symbol?" "+t.symbol:"")
+      : "NOT VERIFIED";
+    knownBurned.textContent=s.knownBurned!==null && s.knownBurned!==undefined
+      ? compactNumber(s.knownBurned)+(t.symbol?" "+t.symbol:"")
+      : "NOT VERIFIED";
+    nextUnlock.textContent=s.nextUnlock || "NO VERIFIED SCHEDULE";
     supplyBadge.className="badge live";
-    supplyBadge.textContent="ON-CHAIN DATA";
+    supplyBadge.textContent="PARTIAL ON-CHAIN";
     setState("live","ARC RPC LIVE");
-    helper.textContent="On-chain token metadata loaded. Circulating, locked and unlock data remain blank until independently evidenced.";
+    helper.textContent="*Circulating is an estimate after recognized burn addresses only. Locked supply and unlock schedules are never guessed.";
   }catch(err){
     tokenName.textContent="Token Scan";
     tokenMeta.textContent="";
     totalSupply.textContent="—";
+    circulating.textContent="—";
+    knownBurned.textContent="—";
+    nextUnlock.textContent="—";
     supplyBadge.className="badge error";
     supplyBadge.textContent="DATA UNAVAILABLE";
     setState("error","SCAN FAILED");

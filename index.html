@@ -133,7 +133,7 @@ async function startScan(){
     tokenName.textContent=(t.name||"Unknown Token")+(t.symbol?" ("+t.symbol+")":"");
     tokenMeta.textContent="Arc · Decimals: "+(t.decimals ?? "—")+" · Source: "+(data.source||"Arc RPC");
     totalSupply.textContent=compactNumber(t.totalSupply)+(t.symbol?" "+t.symbol:"");
-    const s=data.supply||{};
+    const s=supplydata||{};
     circulating.textContent=s.circulatingAfterKnownBurns
       ? compactNumber(s.circulatingAfterKnownBurns)+(t.symbol?" "+t.symbol:"")
       : "NOT VERIFIED";

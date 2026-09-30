@@ -1,15 +1,15 @@
 const RPC_URL = "https://rpc.mainnet.arc.io";
 
+const TOTAL_SUPPLY = "0x18160ddd";
+const DECIMALS = "0x313ce567";
 const BALANCE_OF = "0x70a08231";
 
-// Sadece kesin olarak bilinen standart burn adresleri.
-// Vesting/lock adreslerini kanıt olmadan buraya EKLEMİYORUZ.
 const BURN_ADDRESSES = [
   "0x000000000000000000000000000000000000dEaD",
   "0x0000000000000000000000000000000000000000"
 ];
 
-function isAddress(value) {
+function validAddress(value) {
   return /^0x[a-fA-F0-9]{40}$/.test(value || "");
 }
 
@@ -41,36 +41,23 @@ async function rpc(method, params) {
 }
 
 async function ethCall(to, data) {
-  return rpc("eth_call", [
-    {
-      to,
-      data
-    },
-    "latest"
-  ]);
+  return rpc("eth_call", [{ to, data }, "latest"]);
 }
 
 function encodeBalanceOf(address) {
   return (
     BALANCE_OF +
-    address
-      .toLowerCase()
-      .replace("0x", "")
-      .padStart(64, "0")
+    address.toLowerCase().replace("0x", "").padStart(64, "0")
   );
 }
 
-function decodeUint(hex) {
-  if (!hex || hex === "0x") {
-    return 0n;
-  }
-
+function uint(hex) {
+  if (!hex || hex === "0x") return 0n;
   return BigInt(hex);
 }
 
 function formatUnits(value, decimals) {
   const base = 10n ** BigInt(decimals);
-
   const whole = value / base;
 
   const fraction = (value % base)
@@ -78,24 +65,19 @@ function formatUnits(value, decimals) {
     .padStart(decimals, "0")
     .replace(/0+$/, "");
 
-  return fraction
-    ? `${whole}.${fraction}`
-    : whole.toString();
+  return fraction ? `${whole}.${fraction}` : whole.toString();
 }
 
 module.exports = async function handler(req, res) {
-
   res.setHeader("Content-Type", "application/json");
-
   res.setHeader(
     "Cache-Control",
     "s-maxage=30, stale-while-revalidate=60"
   );
 
-  const token =
-    String(req.query.address || "").trim();
+  const token = String(req.query.address || "").trim();
 
-  if (!isAddress(token)) {
+  if (!validAddress(token)) {
     return res.status(400).json({
       ok: false,
       error: "Invalid token address"
@@ -103,86 +85,106 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    // Token decimals
+    const decimalsHex = await ethCall(token, DECIMALS);
+    const decimals = Number(uint(decimalsHex));
 
-    // token.js zaten çalışan ana token endpoint'imiz.
-    // Burada supply.js yalnızca burn/supply ek analizini yapıyor.
+    // Total supply
+    const totalSupplyHex = await ethCall(token, TOTAL_SUPPLY);
+    const totalSupplyRaw = uint(totalSupplyHex);
 
-    const burnBalances = [];
-
-    let totalBurnedRaw = 0n;
+    // Burn balances
+    let burnedRaw = 0n;
+    const burnAddresses = [];
 
     for (const burnAddress of BURN_ADDRESSES) {
-
       const result = await ethCall(
         token,
         encodeBalanceOf(burnAddress)
       );
 
-      const balance = decodeUint(result);
+      const balanceRaw = uint(result);
 
-      totalBurnedRaw += balance;
+      burnedRaw += balanceRaw;
 
-      burnBalances.push({
+      burnAddresses.push({
         address: burnAddress,
-        balanceRaw: balance.toString()
+        balanceRaw: balanceRaw.toString(),
+        balance: formatUnits(balanceRaw, decimals)
       });
     }
 
-    // ARCY şu anda 18 decimals.
-    // Daha sonra bunu token.js'den dinamik bağlayacağız.
-    const decimals = 18;
+    /*
+      ESTIMATED CIRCULATING
 
-    const burned =
-      formatUnits(totalBurnedRaw, decimals);
+      This is NOT presented as verified circulating supply.
+
+      It only calculates:
+      total supply - balances held at known burn addresses.
+
+      Verified vesting / lock / treasury exclusions must be
+      added separately when evidence exists.
+    */
+
+    const estimatedCirculatingRaw =
+      totalSupplyRaw >= burnedRaw
+        ? totalSupplyRaw - burnedRaw
+        : 0n;
 
     return res.status(200).json({
-
       ok: true,
 
       chain: "Arc",
-
       token,
 
+      totalSupply: {
+        amount: formatUnits(totalSupplyRaw, decimals),
+        amountRaw: totalSupplyRaw.toString(),
+        status: "ON_CHAIN"
+      },
+
       burned: {
-        amount: burned,
-        amountRaw: totalBurnedRaw.toString(),
-        addresses: burnBalances,
+        amount: formatUnits(burnedRaw, decimals),
+        amountRaw: burnedRaw.toString(),
+        addresses: burnAddresses,
         status: "ON_CHAIN"
       },
 
       circulating: {
-        amount: null,
-        status: "NOT_VERIFIED",
-        reason:
-          "A verified circulating-supply methodology requires confirmed non-circulating addresses such as vesting, locked treasury or other excluded balances."
+        amount: formatUnits(
+          estimatedCirculatingRaw,
+          decimals
+        ),
+        amountRaw: estimatedCirculatingRaw.toString(),
+
+        status: "ESTIMATED",
+
+        methodology:
+          "Total Supply - verified balances at known burn addresses",
+
+        warning:
+          "Does not subtract unknown or unverified vesting, lock, treasury or other non-circulating balances."
       },
 
       nextUnlock: {
         date: null,
         amount: null,
+
         status: "NO_VERIFIED_SCHEDULE",
+
         reason:
-          "No vesting or unlock schedule is assumed without verifiable on-chain or official evidence."
+          "No verified vesting or unlock schedule was discovered from the currently connected on-chain sources."
       },
 
       source: "Arc RPC",
 
-      scannedAt:
-        new Date().toISOString()
-
+      scannedAt: new Date().toISOString()
     });
 
   } catch (error) {
-
     return res.status(502).json({
-
       ok: false,
-
-      error:
-        error.message ||
-        "Supply analysis failed"
-
+      error: error.message || "Supply analysis failed"
     });
-
   }
 };

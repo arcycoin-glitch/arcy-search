@@ -1,845 +1,197 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ARCY Search — Token Intelligence</title>
+const ARC_RPC = "https://rpc.mainnet.arc.io";
 
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
+const SELECTORS = {
+  decimals: "0x313ce567",
+  totalSupply: "0x18160ddd",
+  balanceOf: "0x70a08231"
+};
 
-:root{
---bg:#030811;
---panel:#081522;
---panel2:#0b1928;
---border:#173149;
---text:#f4f9ff;
---muted:#8296aa;
---cyan:#20d8ff;
---yellow:#ffd34d;
---green:#40e58a;
---blue:#4b8cff;
---purple:#b878ff;
---orange:#ff9945
+const BURN_ADDRESSES = [
+  "0x000000000000000000000000000000000000dEaD",
+  "0x0000000000000000000000000000000000000000"
+];
+
+function isAddress(value) {
+  return /^0x[a-fA-F0-9]{40}$/.test(value || "");
 }
 
-body{
-min-height:100vh;
-font-family:Arial,Helvetica,sans-serif;
-color:var(--text);
-background:
-radial-gradient(circle at 50% -10%,#0b3953 0%,transparent 34%),
-linear-gradient(180deg,#06101b 0%,#030811 70%)
+function padAddress(address) {
+  return address.toLowerCase().replace(/^0x/, "").padStart(64, "0");
 }
 
-.app{
-width:min(1180px,94%);
-margin:auto;
-padding:32px 0 70px
+function hexToBigInt(hex) {
+  if (!hex || hex === "0x") return 0n;
+  return BigInt(hex);
 }
 
-.header{
-display:flex;
-align-items:center;
-gap:14px;
-margin-bottom:28px
+function formatUnits(value, decimals) {
+  const negative = value < 0n;
+  const abs = negative ? -value : value;
+
+  if (decimals === 0) {
+    return `${negative ? "-" : ""}${abs.toString()}`;
+  }
+
+  const base = 10n ** BigInt(decimals);
+  const whole = abs / base;
+  const fraction = (abs % base)
+    .toString()
+    .padStart(decimals, "0")
+    .replace(/0+$/, "");
+
+  return `${negative ? "-" : ""}${whole.toString()}${
+    fraction ? "." + fraction : ""
+  }`;
 }
 
-.owl{
-width:52px;
-height:52px;
-display:flex;
-align-items:center;
-justify-content:center;
-font-size:28px;
-border-radius:15px;
-background:#081d2b;
-border:1px solid #1b5870;
-box-shadow:0 0 30px rgba(32,216,255,.15)
+async function rpc(method, params) {
+  const response = await fetch(ARC_RPC, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method,
+      params
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Arc RPC HTTP ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  if (data.error) {
+    throw new Error(data.error.message || "Arc RPC error");
+  }
+
+  return data.result;
 }
 
-.title h1{
-font-size:28px;
-letter-spacing:1px
+async function ethCall(to, data) {
+  return rpc("eth_call", [{ to, data }, "latest"]);
 }
 
-.title h1 span{color:var(--cyan)}
-
-.title p{
-color:var(--muted);
-font-size:12px;
-margin-top:5px;
-letter-spacing:1.4px
-}
-
-.search{
-display:flex;
-gap:10px;
-padding:11px;
-border-radius:18px;
-background:#071421;
-border:1px solid #1b4055;
-box-shadow:0 20px 50px rgba(0,0,0,.35)
-}
-
-.search input{
-flex:1;
-min-width:0;
-padding:12px;
-color:white;
-font-size:15px;
-background:transparent;
-border:0;
-outline:0
-}
-
-.search button{
-padding:0 24px;
-border:0;
-border-radius:12px;
-font-weight:800;
-cursor:pointer;
-color:#00131b;
-background:linear-gradient(135deg,#20dcff,#268cff)
-}
-
-.search button:disabled{
-opacity:.55;
-cursor:wait
-}
-
-.helper{
-color:var(--muted);
-font-size:12px;
-margin:11px 5px 25px
-}
-
-.token{
-display:none;
-justify-content:space-between;
-align-items:center;
-gap:15px;
-padding:17px;
-margin-bottom:18px;
-border-radius:17px;
-background:#081522;
-border:1px solid var(--border)
-}
-
-.token.show{display:flex}
-
-.token strong{font-size:18px}
-
-.token small{
-display:block;
-color:var(--muted);
-margin-top:5px;
-word-break:break-all
-}
-
-.status{
-white-space:nowrap;
-padding:6px 9px;
-font-size:10px;
-border-radius:50px;
-color:#9bb1c3;
-border:1px solid #315069
-}
-
-.status.live{
-color:var(--green);
-border-color:rgba(64,229,138,.55)
-}
-
-.status.error{
-color:#ff7777;
-border-color:rgba(255,119,119,.55)
-}
-
-.grid{
-display:grid;
-grid-template-columns:repeat(3,1fr);
-gap:15px
-}
-
-.card{
---accent:var(--yellow);
-position:relative;
-overflow:hidden;
-min-height:225px;
-padding:19px;
-border-radius:20px;
-border:1px solid var(--border);
-background:linear-gradient(155deg,#0d1a29 0%,#07111d 100%)
-}
-
-.card::before{
-content:"";
-position:absolute;
-left:0;
-top:0;
-bottom:0;
-width:4px;
-background:var(--accent)
-}
-
-.card-icon{font-size:24px}
-
-.card h2{
-margin:11px 0 16px;
-font-size:16px
-}
-
-.row{
-display:flex;
-justify-content:space-between;
-gap:12px;
-padding:7px 0;
-font-size:12px;
-border-bottom:1px solid #132437
-}
-
-.row span{color:var(--muted)}
-
-.row b{
-text-align:right;
-word-break:break-word
-}
-
-.badge{
-display:inline-block;
-margin-top:14px;
-padding:5px 8px;
-font-size:9px;
-font-weight:800;
-letter-spacing:.5px;
-color:#9dafbd;
-border:1px solid #344a5c;
-border-radius:30px
-}
-
-.badge.live{
-color:var(--green);
-border-color:rgba(64,229,138,.55)
-}
-
-.badge.error{
-color:#ff7777;
-border-color:rgba(255,119,119,.55)
-}
-
-.details{
-display:block;
-margin-top:12px;
-color:var(--accent);
-font-size:11px;
-font-weight:700
-}
-
-.supply{--accent:var(--yellow)}
-.whales{--accent:var(--cyan)}
-.control{--accent:var(--green)}
-.liquidity{--accent:var(--blue)}
-.claims{--accent:var(--purple)}
-.mechanics{--accent:var(--orange)}
-
-.footer{
-text-align:center;
-margin-top:30px;
-color:#50687c;
-font-size:11px
-}
-
-@media(max-width:850px){
-.grid{grid-template-columns:repeat(2,1fr)}
-}
-
-@media(max-width:520px){
-.app{width:95%;padding-top:20px}
-.title h1{font-size:22px}
-.owl{width:45px;height:45px}
-.search button{padding:0 14px}
-.grid{gap:9px}
-.card{min-height:215px;padding:14px}
-.card h2{font-size:14px}
-.row{font-size:10px}
-}
-</style>
-</head>
-
-<body>
-
-<main class="app">
-
-<header class="header">
-<div class="owl">🦉</div>
-
-<div class="title">
-<h1>ARCY <span>SEARCH</span></h1>
-<p>TOKEN INTELLIGENCE · ARC</p>
-</div>
-</header>
-
-<section class="search">
-<input
-id="contract"
-placeholder="Paste an Arc token contract address..."
-autocomplete="off"
-spellcheck="false"
->
-<button id="scan">SCAN</button>
-</section>
-
-<p class="helper" id="helper">
-Contract-first analysis · Missing evidence is never guessed.
-</p>
-
-<section id="token" class="token">
-
-<div>
-<strong id="tokenName">Token Scan</strong>
-<small id="address">—</small>
-<small id="tokenMeta"></small>
-</div>
-
-<div class="status" id="scanStatus">
-NOT SCANNED
-</div>
-
-</section>
-
-<section class="grid">
-
-<article class="card supply">
-
-<div class="card-icon">🔓</div>
-<h2>Supply & Unlock</h2>
-
-<div class="row">
-<span>Total Supply</span>
-<b id="totalSupply">—</b>
-</div>
-
-<div class="row">
-<span>Circulating</span>
-<b id="circulating">—</b>
-</div>
-
-<div class="row">
-<span>Known Burned</span>
-<b id="knownBurned">—</b>
-</div>
-
-<div class="row">
-<span>Next Unlock</span>
-<b id="nextUnlock">—</b>
-</div>
-
-<div class="badge" id="supplyBadge">
-NOT SCANNED
-</div>
-
-<span class="details">
-View details →
-</span>
-
-</article>
-
-
-<article class="card whales">
-
-<div class="card-icon">🐋</div>
-<h2>Holders & Whales</h2>
-
-<div class="row">
-<span>Holders</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Largest Wallet</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Top 10</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Top 20</span>
-<b>—</b>
-</div>
-
-<div class="badge">
-NOT CONNECTED
-</div>
-
-<span class="details">
-View details →
-</span>
-
-</article>
-
-
-<article class="card control">
-
-<div class="card-icon">🔐</div>
-<h2>Contract Control</h2>
-
-<div class="row">
-<span>Mint</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Pause</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Blacklist</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Owner / Admin</span>
-<b>—</b>
-</div>
-
-<div class="badge">
-NOT CONNECTED
-</div>
-
-<span class="details">
-View details →
-</span>
-
-</article>
-
-
-<article class="card liquidity">
-
-<div class="card-icon">💧</div>
-<h2>Liquidity & Exit</h2>
-
-<div class="row">
-<span>Liquidity</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>24H Volume</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>DEX / Pairs</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>LP Status</span>
-<b>—</b>
-</div>
-
-<div class="badge">
-NOT CONNECTED
-</div>
-
-<span class="details">
-View details →
-</span>
-
-</article>
-
-
-<article class="card claims">
-
-<div class="card-icon">⚖️</div>
-<h2>Claim vs Reality</h2>
-
-<div class="row">
-<span>Claims Checked</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Verified</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Mismatch</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Unverified</span>
-<b>—</b>
-</div>
-
-<div class="badge">
-NOT CONNECTED
-</div>
-
-<span class="details">
-View details →
-</span>
-
-</article>
-
-
-<article class="card mechanics">
-
-<div class="card-icon">⚙️</div>
-<h2>Contract & Mechanics</h2>
-
-<div class="row">
-<span>Buy Tax</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Sell Tax</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Transfer Tax</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Burn / Buyback</span>
-<b>—</b>
-</div>
-
-<div class="badge">
-NOT CONNECTED
-</div>
-
-<span class="details">
-View details →
-</span>
-
-</article>
-
-</section>
-
-<footer class="footer">
-ARCY SEARCH · Numbers → Status → Evidence
-<br><br>
-No hype. Just signal. 🦉
-</footer>
-
-</main>
-
-<script>
-
-const input=document.getElementById("contract");
-const scan=document.getElementById("scan");
-const token=document.getElementById("token");
-const address=document.getElementById("address");
-const tokenName=document.getElementById("tokenName");
-const tokenMeta=document.getElementById("tokenMeta");
-const scanStatus=document.getElementById("scanStatus");
-
-const totalSupply=document.getElementById("totalSupply");
-const circulating=document.getElementById("circulating");
-const knownBurned=document.getElementById("knownBurned");
-const nextUnlock=document.getElementById("nextUnlock");
-
-const supplyBadge=document.getElementById("supplyBadge");
-const helper=document.getElementById("helper");
-
-
-function compactNumber(value){
-
-if(value===null || value===undefined || value===""){
-return "—";
-}
-
-const n=Number(value);
-
-if(!Number.isFinite(n)){
-return String(value);
-}
-
-if(Math.abs(n)>=1000000000){
-return (n/1000000000)
-.toFixed(1)
-.replace(/\.0$/,"")+"B";
-}
-
-if(Math.abs(n)>=1000000){
-return (n/1000000)
-.toFixed(1)
-.replace(/\.0$/,"")+"M";
-}
-
-if(Math.abs(n)>=1000){
-return (n/1000)
-.toFixed(1)
-.replace(/\.0$/,"")+"K";
-}
-
-return new Intl.NumberFormat(
-"en-US",
-{maximumFractionDigits:2}
-).format(n);
-
-}
-
-
-function setState(type,text){
-
-scanStatus.className=
-"status"+(type?" "+type:"");
-
-scanStatus.textContent=text;
-
-}
-
-
-async function startScan(){
-
-const value=input.value.trim();
-
-if(!/^0x[a-fA-F0-9]{40}$/.test(value)){
-
-alert("Enter a valid contract address.");
-
-return;
-
-}
-
-token.classList.add("show");
-
-address.textContent=value;
-
-tokenName.textContent="Scanning token…";
-
-tokenMeta.textContent="";
-
-totalSupply.textContent="…";
-circulating.textContent="…";
-knownBurned.textContent="…";
-nextUnlock.textContent="…";
-
-supplyBadge.className="badge";
-supplyBadge.textContent="SCANNING";
-
-setState("","SCANNING");
-
-helper.textContent=
-"Reading verified on-chain data from Arc…";
-
-scan.disabled=true;
-
-
-try{
-
-
-const [
-tokenResponse,
-supplyResponse
-]=await Promise.all([
-
-fetch(
-"/api/token?address="+encodeURIComponent(value),
-{cache:"no-store"}
-),
-
-fetch(
-"/api/supply?address="+encodeURIComponent(value),
-{cache:"no-store"}
-)
-
-]);
-
-
-let data={};
-let supplyData={};
-
-
-try{
-data=await tokenResponse.json();
-}catch(e){}
-
-
-try{
-supplyData=await supplyResponse.json();
-}catch(e){}
-
-
-if(!tokenResponse.ok || !data.ok){
-
-throw new Error(
-data.error || "Token scan failed"
-);
-
-}
-
-
-const t=data.token || {};
-
-
-tokenName.textContent=
-(t.name || "Unknown Token")
-+
-(t.symbol ? " ("+t.symbol+")" : "");
-
-
-tokenMeta.textContent=
-"Arc · Decimals: "
-+
-(t.decimals ?? "—")
-+
-" · Source: "
-+
-(data.source || "Arc RPC");
-
-
-totalSupply.textContent=
-compactNumber(t.totalSupply)
-+
-(t.symbol ? " "+t.symbol : "");
-
-
-
-if(
-supplyResponse.ok &&
-supplyData.ok &&
-supplyData.burned &&
-supplyData.burned.amount!==null
-){
-
-knownBurned.textContent=
-compactNumber(supplyData.burned.amount)
-+
-(t.symbol ? " "+t.symbol : "");
-
-}else{
-
-knownBurned.textContent=
-"NOT VERIFIED";
-
-}
-
-
-
-if(
-supplyData.circulating &&
-supplyData.circulating.amount!==null
-){
-
-circulating.textContent=
-compactNumber(
-supplyData.circulating.amount
-)
-+
-(t.symbol ? " "+t.symbol : "");
-
-}else{
-
-circulating.textContent=
-"NOT VERIFIED";
-
-}
-
-
-
-if(
-supplyData.nextUnlock &&
-supplyData.nextUnlock.date
-){
-
-nextUnlock.textContent=
-supplyData.nextUnlock.date;
-
-}else{
-
-nextUnlock.textContent=
-"NO VERIFIED SCHEDULE";
-
-}
-
-
-
-supplyBadge.className="badge live";
-
-supplyBadge.textContent=
-"PARTIAL ON-CHAIN";
-
-
-setState(
-"live",
-"ARC RPC LIVE"
-);
-
-
-helper.textContent=
-"On-chain values are shown when verifiable. Missing circulating or unlock evidence is not guessed.";
-
-
-}catch(err){
-
-
-tokenName.textContent=
-"Token Scan";
-
-tokenMeta.textContent="";
-
-totalSupply.textContent="—";
-circulating.textContent="—";
-knownBurned.textContent="—";
-nextUnlock.textContent="—";
-
-
-supplyBadge.className=
-"badge error";
-
-supplyBadge.textContent=
-"DATA UNAVAILABLE";
-
-
-setState(
-"error",
-"SCAN FAILED"
-);
-
-
-helper.textContent=
-err.message ||
-"Arc data could not be read.";
-
-
-}finally{
-
-scan.disabled=false;
-
-}
-
-}
-
-
-scan.addEventListener(
-"click",
-startScan
-);
-
-
-input.addEventListener(
-"keydown",
-e=>{
-if(e.key==="Enter"){
-startScan();
-}
-}
-);
-
-</script>
-
-</body>
-</html>
+module.exports = async function handler(req, res) {
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader(
+    "Cache-Control",
+    "s-maxage=60, stale-while-revalidate=120"
+  );
+
+  const token = String(req.query.token || "").trim();
+
+  if (!isAddress(token)) {
+    return res.status(400).json({
+      ok: false,
+      error: "Valid Arc token contract required"
+    });
+  }
+
+  try {
+    const code = await rpc("eth_getCode", [token, "latest"]);
+
+    if (!code || code === "0x") {
+      return res.status(404).json({
+        ok: false,
+        error: "No contract found at this address"
+      });
+    }
+
+    const [decimalsHex, totalSupplyHex] = await Promise.all([
+      ethCall(token, SELECTORS.decimals),
+      ethCall(token, SELECTORS.totalSupply)
+    ]);
+
+    const decimals = Number(hexToBigInt(decimalsHex));
+
+    if (
+      !Number.isInteger(decimals) ||
+      decimals < 0 ||
+      decimals > 255
+    ) {
+      throw new Error("Invalid token decimals");
+    }
+
+    const totalSupplyRaw = hexToBigInt(totalSupplyHex);
+
+    const burnBalances = await Promise.all(
+      BURN_ADDRESSES.map(async address => {
+        const result = await ethCall(
+          token,
+          SELECTORS.balanceOf + padAddress(address)
+        );
+
+        const raw = hexToBigInt(result);
+
+        return {
+          address,
+          raw,
+          amount: formatUnits(raw, decimals)
+        };
+      })
+    );
+
+    const burnedRaw = burnBalances.reduce(
+      (sum, item) => sum + item.raw,
+      0n
+    );
+
+    return res.status(200).json({
+      ok: true,
+      chain: "Arc",
+      token,
+
+      totalSupply: {
+        amount: formatUnits(totalSupplyRaw, decimals),
+        raw: totalSupplyRaw.toString(),
+        status: "ON_CHAIN"
+      },
+
+      burned: {
+        amount: formatUnits(burnedRaw, decimals),
+        raw: burnedRaw.toString(),
+        addresses: burnBalances.map(item => ({
+          address: item.address,
+          amount: item.amount
+        })),
+        status: "ON_CHAIN_KNOWN_ADDRESSES",
+        methodology:
+          "Sum of balances held by standard 0xdead and zero burn addresses."
+      },
+
+      circulating: {
+        amount: null,
+        status: "NOT_VERIFIED",
+        reason:
+          "Circulating supply cannot be derived reliably from total supply minus burned tokens. Locked, vesting, treasury and other non-circulating balances require separate verification."
+      },
+
+      locked: {
+        amount: null,
+        status: "NOT_VERIFIED",
+        reason:
+          "No verified lock or vesting balance has been connected yet."
+      },
+
+      nextUnlock: {
+        date: null,
+        amount: null,
+        status: "NOT_VERIFIED",
+        reason:
+          "Unlock schedule requires a separately verified vesting or unlock source."
+      },
+
+      source: "Arc RPC",
+      scannedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    return res.status(502).json({
+      ok: false,
+      error: error.message || "Supply scan failed"
+    });
+  }
+};

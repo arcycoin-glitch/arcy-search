@@ -125,6 +125,7 @@ async function startScan(){
   scan.disabled=true;
   try{
     const response=await fetch("/api/token?address="+encodeURIComponent(value),{cache:"no-store"});
+    const supplyData=await supplyResponse.json();
     let data={};
     try{data=await response.json();}catch(e){}
     if(!response.ok||!data.ok) throw new Error(data.error||"Token scan failed");

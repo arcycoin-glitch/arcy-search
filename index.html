@@ -661,6 +661,7 @@ fetch(
 
 let data={};
 let supplyData={};
+let unlockData={};
 
 
 try{
@@ -683,6 +684,19 @@ data.error || "Token scan failed"
 
 
 const t=data.token || {};
+
+
+if(t.symbol){
+try{
+const unlockResponse=await fetch(
+"/api/unlock?symbol="+encodeURIComponent(t.symbol),
+{cache:"no-store"}
+);
+unlockData=await unlockResponse.json();
+}catch(e){
+unlockData={};
+}
+}
 
 
 tokenName.textContent=
@@ -751,17 +765,19 @@ circulating.textContent=
 
 
 if(
-supplyData.nextUnlock &&
-supplyData.nextUnlock.date
+unlockData.ok &&
+unlockData.nextUnlock &&
+unlockData.nextUnlock.date
 ){
 
+const u=unlockData.nextUnlock;
 nextUnlock.textContent=
-supplyData.nextUnlock.date;
+u.date + (u.amount ? " · " + u.amount : "");
 
 }else{
 
 nextUnlock.textContent=
-"NO VERIFIED SCHEDULE";
+"NO SOURCE-REPORTED SCHEDULE";
 
 }
 

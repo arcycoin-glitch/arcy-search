@@ -1,0 +1,1 @@
+const c=require('../lib/core');module.exports=c.route(async()=>({status:'NO_CLAIMS_SUPPLIED',claims:[],reason:'No explicit project claims with reliable source attribution have been supplied.'}));

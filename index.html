@@ -353,26 +353,26 @@ View details →
 
 <div class="row">
 <span>Holders</span>
-<b>—</b>
+<b id="holderCount">—</b>
 </div>
 
 <div class="row">
 <span>Largest Wallet</span>
-<b>—</b>
+<b id="largestWallet">—</b>
 </div>
 
 <div class="row">
 <span>Top 10</span>
-<b>—</b>
+<b id="top10">—</b>
 </div>
 
 <div class="row">
 <span>Top 20</span>
-<b>—</b>
+<b id="top20">—</b>
 </div>
 
-<div class="badge">
-NOT CONNECTED
+<div class="badge" id="holdersBadge">
+NOT SCANNED
 </div>
 
 <span class="details">
@@ -553,6 +553,12 @@ const nextUnlock=document.getElementById("nextUnlock");
 const supplyBadge=document.getElementById("supplyBadge");
 const helper=document.getElementById("helper");
 
+const holderCount=document.getElementById("holderCount");
+const largestWallet=document.getElementById("largestWallet");
+const top10=document.getElementById("top10");
+const top20=document.getElementById("top20");
+const holdersBadge=document.getElementById("holdersBadge");
+
 
 function compactNumber(value){
 
@@ -626,6 +632,12 @@ totalSupply.textContent="…";
 circulating.textContent="…";
 knownBurned.textContent="…";
 nextUnlock.textContent="…";
+holderCount.textContent="…";
+largestWallet.textContent="…";
+top10.textContent="…";
+top20.textContent="…";
+holdersBadge.className="badge";
+holdersBadge.textContent="SCANNING";
 
 supplyBadge.className="badge";
 supplyBadge.textContent="SCANNING";
@@ -663,6 +675,7 @@ let data={};
 let supplyData={};
 let unlockData={};
 let marketData={};
+let holdersData={};
 
 
 try{
@@ -696,6 +709,16 @@ const marketResponse=await fetch(
 marketData=await marketResponse.json();
 }catch(e){
 marketData={};
+}
+
+try{
+const holdersResponse=await fetch(
+"/api/holders?token="+encodeURIComponent(value),
+{cache:"no-store"}
+);
+holdersData=await holdersResponse.json();
+}catch(e){
+holdersData={};
 }
 
 
@@ -795,6 +818,39 @@ nextUnlock.textContent=
 
 
 
+if(holdersData.ok){
+holderCount.textContent=
+Number.isFinite(Number(holdersData.holders))
+? new Intl.NumberFormat("en-US").format(Number(holdersData.holders))
+: "NOT VERIFIED";
+
+largestWallet.textContent=
+holdersData.largestWalletPct!==null && holdersData.largestWalletPct!==undefined
+? Number(holdersData.largestWalletPct).toFixed(2)+"%"
+: "NOT VERIFIED";
+
+top10.textContent=
+holdersData.top10Pct!==null && holdersData.top10Pct!==undefined
+? Number(holdersData.top10Pct).toFixed(2)+"%"
+: "NOT VERIFIED";
+
+top20.textContent=
+holdersData.top20Pct!==null && holdersData.top20Pct!==undefined
+? Number(holdersData.top20Pct).toFixed(2)+"%"
+: "NOT VERIFIED";
+
+holdersBadge.className="badge live";
+holdersBadge.textContent=holdersData.complete ? "ARCSCAN INDEXED" : "PARTIAL INDEX";
+}else{
+holderCount.textContent="NOT VERIFIED";
+largestWallet.textContent="NOT VERIFIED";
+top10.textContent="NOT VERIFIED";
+top20.textContent="NOT VERIFIED";
+holdersBadge.className="badge";
+holdersBadge.textContent="DATA UNAVAILABLE";
+}
+
+
 supplyBadge.className="badge live";
 
 supplyBadge.textContent=
@@ -823,6 +879,12 @@ totalSupply.textContent="—";
 circulating.textContent="—";
 knownBurned.textContent="—";
 nextUnlock.textContent="—";
+holderCount.textContent="—";
+largestWallet.textContent="—";
+top10.textContent="—";
+top20.textContent="—";
+holdersBadge.className="badge error";
+holdersBadge.textContent="DATA UNAVAILABLE";
 
 
 supplyBadge.className=

@@ -1,9 +1,2 @@
-const c=require('../lib/core');
-module.exports=c.route(async a=>{
-  const result={status:'NOT_VERIFIED',source:'Arcscan',holderCount:null,largestWalletPct:null,top10Pct:null,top20Pct:null,methodology:'Exclude only zero and 0xdead. Concentration denominator is total supply.',reason:'Holder service unavailable or schema/coverage not validated.'};
-  // Do not promote an undocumented payload into facts. The public endpoint currently returns HTTP 530.
-  try{const chain=await c.json('https://api.arc-scan.org/v1/chain');if(chain.chain_id!==c.CHAIN||chain.capabilities?.holder_index!==true)return result;
-    await c.json('https://api.arc-scan.org/v1/tokens/'+a+'/holders?limit=22');
-    return {...result,reason:'Service reachable; response schema, ranking and full-history coverage still require validation.'};
-  }catch{return result;}
-});
+const c=require('../lib/core'),f=require('../lib/fields'),index=require('../lib/holder-index');
+module.exports=c.route(async a=>f.cached('holders:'+a,60000,async()=>{const result=await f.resolve([{name:'A/X Explorer + pinned Arc RPC balance reconciliation',tier:'ONCHAIN_VERIFIED',read:()=>index.explorer(a)},{name:'GoPlus candidate wallets + pinned Arc RPC',tier:'ONCHAIN_VERIFIED',read:()=>require('../lib/goplus').holders(a)},{name:'Resumable indexer candidate reconciliation',tier:'ONCHAIN_VERIFIED',read:()=>require('../lib/holder-candidates').advance(a,{budgetMs:5000,maxPages:2,maxBatches:2})},{name:'Resumable Arc Transfer history',tier:'ONCHAIN_VERIFIED',read:()=>index.advance(a,{budgetMs:7000,maxRanges:8})}]);if(result.value)return {...result.value,attempts:result.attempts};return {status:'NOT_VERIFIED',source:null,holderCount:null,largestWalletPct:null,top10Pct:null,top20Pct:null,dataState:result.attempts.every(x=>x.dataState==='SOURCE_API_FAILED')?'SOURCE_API_FAILED':'NOT_VERIFIED',reasonCode:result.reasonCode,reason:result.reason,attempts:result.attempts,fields:Object.fromEntries(['holderCount','largestWalletPct','top10Pct','top20Pct'].map(k=>[k,{...result}]))};}));

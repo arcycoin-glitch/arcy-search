@@ -1,0 +1,2 @@
+const index=require('../lib/holder-index');
+const a=String(process.argv[2]||'').toLowerCase();if(!/^0x[0-9a-f]{40}$/.test(a)){console.error('Usage: node scripts/index-holders.cjs <Arc token address> [max-ranges]');process.exitCode=1;}else(async()=>{const result=await index.advance(a,{budgetMs:45000,maxRanges:Number(process.argv[3])||100,maxWallets:30000});console.log(JSON.stringify(result,null,2));})().catch(e=>{console.error(require('../lib/core').failure(e));process.exitCode=1;});

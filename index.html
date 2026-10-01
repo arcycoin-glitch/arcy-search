@@ -2,934 +2,170 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>ARCY Search — Token Intelligence</title>
-
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-
-:root{
---bg:#030811;
---panel:#081522;
---panel2:#0b1928;
---border:#173149;
---text:#f4f9ff;
---muted:#8296aa;
---cyan:#20d8ff;
---yellow:#ffd34d;
---green:#40e58a;
---blue:#4b8cff;
---purple:#b878ff;
---orange:#ff9945
-}
-
-body{
-min-height:100vh;
-font-family:Arial,Helvetica,sans-serif;
-color:var(--text);
-background:
-radial-gradient(circle at 50% -10%,#0b3953 0%,transparent 34%),
-linear-gradient(180deg,#06101b 0%,#030811 70%)
-}
-
-.app{
-width:min(1180px,94%);
-margin:auto;
-padding:32px 0 70px
-}
-
-.header{
-display:flex;
-align-items:center;
-gap:14px;
-margin-bottom:28px
-}
-
-.owl{
-width:52px;
-height:52px;
-display:flex;
-align-items:center;
-justify-content:center;
-font-size:28px;
-border-radius:15px;
-background:#081d2b;
-border:1px solid #1b5870;
-box-shadow:0 0 30px rgba(32,216,255,.15)
-}
-
-.title h1{
-font-size:28px;
-letter-spacing:1px
-}
-
-.title h1 span{color:var(--cyan)}
-
-.title p{
-color:var(--muted);
-font-size:12px;
-margin-top:5px;
-letter-spacing:1.4px
-}
-
-.search{
-display:flex;
-gap:10px;
-padding:11px;
-border-radius:18px;
-background:#071421;
-border:1px solid #1b4055;
-box-shadow:0 20px 50px rgba(0,0,0,.35)
-}
-
-.search input{
-flex:1;
-min-width:0;
-padding:12px;
-color:white;
-font-size:15px;
-background:transparent;
-border:0;
-outline:0
-}
-
-.search button{
-padding:0 24px;
-border:0;
-border-radius:12px;
-font-weight:800;
-cursor:pointer;
-color:#00131b;
-background:linear-gradient(135deg,#20dcff,#268cff)
-}
-
-.search button:disabled{
-opacity:.55;
-cursor:wait
-}
-
-.helper{
-color:var(--muted);
-font-size:12px;
-margin:11px 5px 25px
-}
-
-.token{
-display:none;
-justify-content:space-between;
-align-items:center;
-gap:15px;
-padding:17px;
-margin-bottom:18px;
-border-radius:17px;
-background:#081522;
-border:1px solid var(--border)
-}
-
-.token.show{display:flex}
-
-.token strong{font-size:18px}
-
-.token small{
-display:block;
-color:var(--muted);
-margin-top:5px;
-word-break:break-all
-}
-
-.status{
-white-space:nowrap;
-padding:6px 9px;
-font-size:10px;
-border-radius:50px;
-color:#9bb1c3;
-border:1px solid #315069
-}
-
-.status.live{
-color:var(--green);
-border-color:rgba(64,229,138,.55)
-}
-
-.status.error{
-color:#ff7777;
-border-color:rgba(255,119,119,.55)
-}
-
-.grid{
-display:grid;
-grid-template-columns:repeat(3,1fr);
-gap:15px
-}
-
-.card{
---accent:var(--yellow);
-position:relative;
-overflow:hidden;
-min-height:225px;
-padding:19px;
-border-radius:20px;
-border:1px solid var(--border);
-background:linear-gradient(155deg,#0d1a29 0%,#07111d 100%)
-}
-
-.card::before{
-content:"";
-position:absolute;
-left:0;
-top:0;
-bottom:0;
-width:4px;
-background:var(--accent)
-}
-
-.card-icon{font-size:24px}
-
-.card h2{
-margin:11px 0 16px;
-font-size:16px
-}
-
-.row{
-display:flex;
-justify-content:space-between;
-gap:12px;
-padding:7px 0;
-font-size:12px;
-border-bottom:1px solid #132437
-}
-
-.row span{color:var(--muted)}
-
-.row b{
-text-align:right;
-word-break:break-word
-}
-
-.badge{
-display:inline-block;
-margin-top:14px;
-padding:5px 8px;
-font-size:9px;
-font-weight:800;
-letter-spacing:.5px;
-color:#9dafbd;
-border:1px solid #344a5c;
-border-radius:30px
-}
-
-.badge.live{
-color:var(--green);
-border-color:rgba(64,229,138,.55)
-}
-
-.badge.error{
-color:#ff7777;
-border-color:rgba(255,119,119,.55)
-}
-
-.details{
-display:block;
-margin-top:12px;
-color:var(--accent);
-font-size:11px;
-font-weight:700
-}
-
-.supply{--accent:var(--yellow)}
-.whales{--accent:var(--cyan)}
-.control{--accent:var(--green)}
-.liquidity{--accent:var(--blue)}
-.claims{--accent:var(--purple)}
-.mechanics{--accent:var(--orange)}
-
-.footer{
-text-align:center;
-margin-top:30px;
-color:#50687c;
-font-size:11px
-}
-
-@media(max-width:850px){
-.grid{grid-template-columns:repeat(2,1fr)}
-}
-
-@media(max-width:520px){
-.app{width:95%;padding-top:20px}
-.title h1{font-size:22px}
-.owl{width:45px;height:45px}
-.search button{padding:0 14px}
-.grid{gap:9px}
-.card{min-height:215px;padding:14px}
-.card h2{font-size:14px}
-.row{font-size:10px}
-}
+:root{--bg:#030811;--panel:#081522;--border:#173149;--text:#f4f9ff;--muted:#8296aa;--cyan:#20d8ff;--yellow:#ffd34d;--green:#40e58a;--blue:#4b8cff;--purple:#b878ff;--orange:#ff9945;--red:#ff7777}
+body{min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(--text);background:radial-gradient(circle at 50% -10%,#0b3953 0%,transparent 34%),linear-gradient(180deg,#06101b 0%,#030811 70%)}
+.app{width:min(1180px,94%);margin:auto;padding:32px 0 70px}.header{display:flex;align-items:center;gap:14px;margin-bottom:28px}
+.owl{width:52px;height:52px;display:flex;align-items:center;justify-content:center;font-size:28px;border-radius:15px;background:#081d2b;border:1px solid #1b5870;box-shadow:0 0 30px rgba(32,216,255,.15)}
+.title h1{font-size:28px;letter-spacing:1px}.title h1 span{color:var(--cyan)}.title p{color:var(--muted);font-size:12px;margin-top:5px;letter-spacing:1.4px}
+.search{display:flex;gap:10px;padding:11px;border-radius:18px;background:#071421;border:1px solid #1b4055;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.search input{flex:1;min-width:0;padding:12px;color:white;font-size:15px;background:transparent;border:0;outline:0}.search button{padding:0 24px;border:0;border-radius:12px;font-weight:800;cursor:pointer;color:#00131b;background:linear-gradient(135deg,#20dcff,#268cff)}.search button:disabled{opacity:.55;cursor:wait}
+.helper{color:var(--muted);font-size:12px;margin:11px 5px 25px}.token{display:none;justify-content:space-between;align-items:center;gap:15px;padding:17px;margin-bottom:18px;border-radius:17px;background:#081522;border:1px solid var(--border)}.token.show{display:flex}.token strong{font-size:18px}.token small{display:block;color:var(--muted);margin-top:5px;word-break:break-all}
+.status{white-space:nowrap;padding:6px 9px;font-size:10px;border-radius:50px;color:#9bb1c3;border:1px solid #315069}.status.live,.badge.live{color:var(--green);border-color:rgba(64,229,138,.55)}.status.error,.badge.error{color:var(--red);border-color:rgba(255,119,119,.55)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.card{--accent:var(--yellow);position:relative;overflow:hidden;min-height:225px;padding:19px;border-radius:20px;border:1px solid var(--border);background:linear-gradient(155deg,#0d1a29 0%,#07111d 100%)}.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent)}.card-icon{font-size:24px}.card h2{margin:11px 0 16px;font-size:16px}.row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:12px;border-bottom:1px solid #132437}.row span{color:var(--muted)}.row b{text-align:right;word-break:break-word}.badge{display:inline-block;margin-top:14px;padding:5px 8px;font-size:9px;font-weight:800;letter-spacing:.5px;color:#9dafbd;border:1px solid #344a5c;border-radius:30px}.badge.watch{color:var(--yellow);border-color:rgba(255,211,77,.5)}.details{display:block;margin-top:12px;color:var(--accent);font-size:11px;font-weight:700}
+.supply{--accent:var(--yellow)}.whales{--accent:var(--cyan)}.control{--accent:var(--green)}.liquidity{--accent:var(--blue)}.claims{--accent:var(--purple)}.mechanics{--accent:var(--orange)}
+.footer{text-align:center;margin-top:30px;color:#50687c;font-size:11px}
+@media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.app{width:95%;padding-top:20px}.title h1{font-size:22px}.owl{width:45px;height:45px}.search button{padding:0 14px}.grid{gap:9px}.card{min-height:215px;padding:14px}.card h2{font-size:14px}.row{font-size:10px}.token{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
-
 <body>
-
 <main class="app">
-
-<header class="header">
-<div class="owl">🦉</div>
-
-<div class="title">
-<h1>ARCY <span>SEARCH</span></h1>
-<p>TOKEN INTELLIGENCE · ARC</p>
-</div>
-</header>
-
-<section class="search">
-<input
-id="contract"
-placeholder="Paste an Arc token contract address..."
-autocomplete="off"
-spellcheck="false"
->
-<button id="scan">SCAN</button>
-</section>
-
-<p class="helper" id="helper">
-Contract-first analysis · Missing evidence is never guessed.
-</p>
-
-<section id="token" class="token">
-
-<div>
-<strong id="tokenName">Token Scan</strong>
-<small id="address">—</small>
-<small id="tokenMeta"></small>
-</div>
-
-<div class="status" id="scanStatus">
-NOT SCANNED
-</div>
-
-</section>
+<header class="header"><div class="owl">🦉</div><div class="title"><h1>ARCY <span>SEARCH</span></h1><p>TOKEN INTELLIGENCE · ARC</p></div></header>
+<section class="search"><input id="contract" placeholder="Paste an Arc token contract address..." autocomplete="off" spellcheck="false"><button id="scan">SCAN</button></section>
+<p class="helper" id="helper">Contract-first analysis · Missing evidence is never guessed.</p>
+<section id="token" class="token"><div><strong id="tokenName">Token Scan</strong><small id="address">—</small><small id="tokenMeta"></small></div><div class="status" id="scanStatus">NOT SCANNED</div></section>
 
 <section class="grid">
+<article class="card supply"><div class="card-icon">🔓</div><h2>Supply & Unlock</h2>
+<div class="row"><span>Total Supply</span><b id="totalSupply">—</b></div><div class="row"><span>Circulating</span><b id="circulating">—</b></div><div class="row"><span>Burn Address Balance</span><b id="burned">—</b></div><div class="row"><span>Next Unlock</span><b id="unlock">—</b></div><div id="supplyBadge" class="badge">NOT SCANNED</div><span class="details">Numbers → Status → Evidence</span></article>
 
-<article class="card supply">
+<article class="card whales"><div class="card-icon">🐋</div><h2>Holders & Whales</h2>
+<div class="row"><span>Holders</span><b id="holders">—</b></div><div class="row"><span>Largest Wallet</span><b id="largest">—</b></div><div class="row"><span>Top 10</span><b id="top10">—</b></div><div class="row"><span>Top 20</span><b id="top20">—</b></div><div id="holdersBadge" class="badge">NOT SCANNED</div><span class="details">Burn addresses excluded from whale concentration</span></article>
 
-<div class="card-icon">🔓</div>
-<h2>Supply & Unlock</h2>
+<article class="card control"><div class="card-icon">🔐</div><h2>Contract Control</h2>
+<div class="row"><span>Mint</span><b id="mint">—</b></div><div class="row"><span>Pause</span><b id="pause">—</b></div><div class="row"><span>Blacklist</span><b id="blacklist">—</b></div><div class="row"><span>Owner / Admin</span><b id="owner">—</b></div><div id="controlBadge" class="badge">NOT SCANNED</div><span class="details">Proxy & AccessControl included</span></article>
 
-<div class="row">
-<span>Total Supply</span>
-<b id="totalSupply">—</b>
-</div>
+<article class="card liquidity"><div class="card-icon">💧</div><h2>Liquidity & Exit</h2>
+<div class="row"><span>Liquidity</span><b id="liquidity">—</b></div><div class="row"><span>24H Volume</span><b id="volume">—</b></div><div class="row"><span>DEX / Pairs</span><b id="dexPairs">—</b></div><div class="row"><span>LP Status</span><b id="lp">—</b></div><div id="liquidityBadge" class="badge">NOT SCANNED</div><span class="details">Market depth ≠ guaranteed exit</span></article>
 
-<div class="row">
-<span>Circulating</span>
-<b id="circulating">—</b>
-</div>
+<article class="card claims"><div class="card-icon">⚖️</div><h2>Claim vs Reality</h2>
+<div class="row"><span>Claims Checked</span><b id="claimsChecked">—</b></div><div class="row"><span>Verified</span><b id="verified">—</b></div><div class="row"><span>Mismatch</span><b id="mismatch">—</b></div><div class="row"><span>Unverified</span><b id="unverified">—</b></div><div id="claimsBadge" class="badge">NOT SCANNED</div><span class="details">Only explicit claims are evaluated</span></article>
 
-<div class="row">
-<span>Burn Address Balance</span>
-<b id="knownBurned">—</b>
-</div>
-
-<div class="row">
-<span>Next Unlock</span>
-<b id="nextUnlock">—</b>
-</div>
-
-<div class="badge" id="supplyBadge">
-NOT SCANNED
-</div>
-
-<span class="details">
-View details →
-</span>
-
-</article>
-
-
-<article class="card whales">
-
-<div class="card-icon">🐋</div>
-<h2>Holders & Whales</h2>
-
-<div class="row">
-<span>Holders</span>
-<b id="holderCount">—</b>
-</div>
-
-<div class="row">
-<span>Largest Wallet</span>
-<b id="largestWallet">—</b>
-</div>
-
-<div class="row">
-<span>Top 10</span>
-<b id="top10">—</b>
-</div>
-
-<div class="row">
-<span>Top 20</span>
-<b id="top20">—</b>
-</div>
-
-<div class="badge" id="holdersBadge">
-NOT SCANNED
-</div>
-
-<span class="details">
-View details →
-</span>
-
-</article>
-
-
-<article class="card control">
-
-<div class="card-icon">🔐</div>
-<h2>Contract Control</h2>
-
-<div class="row">
-<span>Mint</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Pause</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Blacklist</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Owner / Admin</span>
-<b>—</b>
-</div>
-
-<div class="badge">
-NOT CONNECTED
-</div>
-
-<span class="details">
-View details →
-</span>
-
-</article>
-
-
-<article class="card liquidity">
-
-<div class="card-icon">💧</div>
-<h2>Liquidity & Exit</h2>
-
-<div class="row">
-<span>Liquidity</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>24H Volume</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>DEX / Pairs</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>LP Status</span>
-<b>—</b>
-</div>
-
-<div class="badge">
-NOT CONNECTED
-</div>
-
-<span class="details">
-View details →
-</span>
-
-</article>
-
-
-<article class="card claims">
-
-<div class="card-icon">⚖️</div>
-<h2>Claim vs Reality</h2>
-
-<div class="row">
-<span>Claims Checked</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Verified</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Mismatch</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Unverified</span>
-<b>—</b>
-</div>
-
-<div class="badge">
-NOT CONNECTED
-</div>
-
-<span class="details">
-View details →
-</span>
-
-</article>
-
-
-<article class="card mechanics">
-
-<div class="card-icon">⚙️</div>
-<h2>Contract & Mechanics</h2>
-
-<div class="row">
-<span>Buy Tax</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Sell Tax</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Transfer Tax</span>
-<b>—</b>
-</div>
-
-<div class="row">
-<span>Burn / Buyback</span>
-<b>—</b>
-</div>
-
-<div class="badge">
-NOT CONNECTED
-</div>
-
-<span class="details">
-View details →
-</span>
-
-</article>
-
+<article class="card mechanics"><div class="card-icon">⚙️</div><h2>Contract & Mechanics</h2>
+<div class="row"><span>Buy Tax</span><b id="buyTax">—</b></div><div class="row"><span>Sell Tax</span><b id="sellTax">—</b></div><div class="row"><span>Transfer Tax</span><b id="transferTax">—</b></div><div class="row"><span>Burn / Buyback</span><b id="burnBuyback">—</b></div><div id="mechanicsBadge" class="badge">NOT SCANNED</div><span class="details">Unknown mechanics are never guessed</span></article>
 </section>
 
-<footer class="footer">
-ARCY SEARCH · Numbers → Status → Evidence
-<br><br>
-No hype. Just signal. 🦉
-</footer>
-
+<footer class="footer">ARCY SEARCH · Numbers → Status → Evidence<br><br>No hype. Just signal. 🦉</footer>
 </main>
 
 <script>
+const $=id=>document.getElementById(id);
+const input=$("contract"),scan=$("scan"),token=$("token"),helper=$("helper");
+const ids=["totalSupply","circulating","burned","unlock","holders","largest","top10","top20","mint","pause","blacklist","owner","liquidity","volume","dexPairs","lp","claimsChecked","verified","mismatch","unverified","buyTax","sellTax","transferTax","burnBuyback"];
+const badges=["supplyBadge","holdersBadge","controlBadge","liquidityBadge","claimsBadge","mechanicsBadge"];
 
-const input=document.getElementById("contract");
-const scan=document.getElementById("scan");
-const token=document.getElementById("token");
-const address=document.getElementById("address");
-const tokenName=document.getElementById("tokenName");
-const tokenMeta=document.getElementById("tokenMeta");
-const scanStatus=document.getElementById("scanStatus");
-
-const totalSupply=document.getElementById("totalSupply");
-const circulating=document.getElementById("circulating");
-const knownBurned=document.getElementById("knownBurned");
-const nextUnlock=document.getElementById("nextUnlock");
-
-const supplyBadge=document.getElementById("supplyBadge");
-const helper=document.getElementById("helper");
-
-const holderCount=document.getElementById("holderCount");
-const largestWallet=document.getElementById("largestWallet");
-const top10=document.getElementById("top10");
-const top20=document.getElementById("top20");
-const holdersBadge=document.getElementById("holdersBadge");
-
-
-function compactNumber(value){
-
-if(value===null || value===undefined || value===""){
-return "—";
+function compact(v){
+ if(v===null||v===undefined||v==="")return "—";
+ const n=Number(v); if(!Number.isFinite(n))return String(v);
+ const a=Math.abs(n);
+ if(a>=1e9)return (n/1e9).toFixed(1).replace(/\.0$/,"")+"B";
+ if(a>=1e6)return (n/1e6).toFixed(1).replace(/\.0$/,"")+"M";
+ if(a>=1e3)return (n/1e3).toFixed(1).replace(/\.0$/,"")+"K";
+ return new Intl.NumberFormat("en-US",{maximumFractionDigits:2}).format(n);
 }
-
-const n=Number(value);
-
-if(!Number.isFinite(n)){
-return String(value);
+function money(v){return v===null||v===undefined?"NOT VERIFIED":"$"+compact(v)}
+function percent(v){return v===null||v===undefined?"NOT VERIFIED":Number(v).toFixed(2).replace(/\.00$/,"")+"%"}
+function statusText(x){return x===true?"DETECTED":x===false?"NOT DETECTED":"NOT VERIFIED"}
+function badge(id,text,type=""){const e=$(id);e.className="badge"+(type?" "+type:"");e.textContent=text}
+function reset(){
+ ids.forEach(id=>$(id).textContent="…");
+ badges.forEach(id=>badge(id,"SCANNING"));
 }
-
-if(Math.abs(n)>=1000000000){
-return (n/1000000000)
-.toFixed(1)
-.replace(/\.0$/,"")+"B";
+async function api(path){
+ try{
+  const r=await fetch(path,{cache:"no-store"});
+  let j={}; try{j=await r.json()}catch{}
+  if(!r.ok||!j.ok)return {ok:false,error:j.error||`HTTP ${r.status}`};
+  return j;
+ }catch(e){return {ok:false,error:e.message}}
 }
-
-if(Math.abs(n)>=1000000){
-return (n/1000000)
-.toFixed(1)
-.replace(/\.0$/,"")+"M";
-}
-
-if(Math.abs(n)>=1000){
-return (n/1000)
-.toFixed(1)
-.replace(/\.0$/,"")+"K";
-}
-
-return new Intl.NumberFormat(
-"en-US",
-{maximumFractionDigits:2}
-).format(n);
-
-}
-
-
-function setState(type,text){
-
-scanStatus.className=
-"status"+(type?" "+type:"");
-
-scanStatus.textContent=text;
-
-}
-
+function setGlobal(type,text){$("scanStatus").className="status"+(type?" "+type:"");$("scanStatus").textContent=text}
 
 async function startScan(){
+ const address=input.value.trim();
+ if(!/^0x[a-fA-F0-9]{40}$/.test(address)){alert("Enter a valid Arc contract address.");return}
+ token.classList.add("show");$("address").textContent=address;$("tokenName").textContent="Scanning token…";$("tokenMeta").textContent="";
+ reset();setGlobal("","SCANNING");helper.textContent="Scanning Arc token evidence across all six modules…";scan.disabled=true;
 
-const value=input.value.trim();
+ const tokenData=await api("/api/token?address="+encodeURIComponent(address));
+ if(!tokenData.ok){
+  ids.forEach(id=>$(id).textContent="—");badges.forEach(id=>badge(id,"DATA UNAVAILABLE","error"));
+  $("tokenName").textContent="Token Scan";setGlobal("error","SCAN FAILED");helper.textContent=tokenData.error||"Token scan failed.";scan.disabled=false;return;
+ }
+ const t=tokenData.token||{}, symbol=t.symbol||"";
+ $("tokenName").textContent=(t.name||"Unknown Token")+(symbol?" ("+symbol+")":"");
+ $("tokenMeta").textContent="Arc · Decimals: "+(t.decimals??"—")+" · Source: "+(tokenData.source||"Arc RPC");
 
-if(!/^0x[a-fA-F0-9]{40}$/.test(value)){
+ const [supply,market,unlock,holders,control,liq,claims,mech]=await Promise.all([
+  api("/api/supply?token="+encodeURIComponent(address)),
+  api("/api/market?address="+encodeURIComponent(address)),
+  symbol?api("/api/unlock?symbol="+encodeURIComponent(symbol)):Promise.resolve({ok:false}),
+  api("/api/holders?token="+encodeURIComponent(address)),
+  api("/api/control?token="+encodeURIComponent(address)),
+  api("/api/liquidity?token="+encodeURIComponent(address)),
+  api("/api/claims?token="+encodeURIComponent(address)),
+  api("/api/mechanics?token="+encodeURIComponent(address))
+ ]);
 
-alert("Enter a valid contract address.");
+ // 1 — Supply & Unlock
+ $("totalSupply").textContent=(supply.ok&&supply.totalSupply?.amount!=null?compact(supply.totalSupply.amount):compact(t.totalSupply))+(symbol?" "+symbol:"");
+ $("circulating").textContent=market.ok&&Number(market.circulatingSupply)>0?compact(market.circulatingSupply)+(symbol?" "+symbol:""):"NOT VERIFIED";
+ $("burned").textContent=supply.ok&&supply.burned?.amount!=null?compact(supply.burned.amount)+(symbol?" "+symbol:""):"NOT VERIFIED";
+ $("unlock").textContent=unlock.ok&&unlock.nextUnlock?.date?unlock.nextUnlock.date+(unlock.nextUnlock.amount?" · "+unlock.nextUnlock.amount:""):"NO SOURCE-REPORTED SCHEDULE";
+ badge("supplyBadge",supply.ok?"EVIDENCE CONNECTED":"DATA UNAVAILABLE",supply.ok?"live":"error");
 
-return;
+ // 2 — Holders
+ if(holders.ok){
+  $("holders").textContent=holders.holders??"NOT VERIFIED";$("largest").textContent=percent(holders.largestWalletPct);$("top10").textContent=percent(holders.top10Pct);$("top20").textContent=percent(holders.top20Pct);
+  badge("holdersBadge",holders.status||"INDEXED",holders.holders!=null?"live":"watch");
+ }else{
+  ["holders","largest","top10","top20"].forEach(id=>$(id).textContent="NOT VERIFIED");badge("holdersBadge","DATA UNAVAILABLE","error");
+ }
 
+ // 3 — Control
+ if(control.ok){
+  $("mint").textContent=control.mint?.status||"NOT VERIFIED";
+  $("pause").textContent=control.pause?.currentState===true?"PAUSED":control.pause?.status||"NOT VERIFIED";
+  $("blacklist").textContent=control.blacklist?.status||"NOT VERIFIED";
+  $("owner").textContent=control.owner?.address?control.owner.address.slice(0,6)+"…"+control.owner.address.slice(-4):(control.proxy?.admin?control.proxy.admin.slice(0,6)+"…"+control.proxy.admin.slice(-4):"NOT VERIFIED");
+  badge("controlBadge",control.controlSummary?.status||"SCANNED",control.controlSummary?.privilegedControlEvidence?"watch":"live");
+ }else{["mint","pause","blacklist","owner"].forEach(id=>$(id).textContent="NOT VERIFIED");badge("controlBadge","DATA UNAVAILABLE","error")}
+
+ // 4 — Liquidity
+ if(liq.ok){
+  $("liquidity").textContent=money(liq.liquidityUsd);$("volume").textContent=money(liq.volume24hUsd);
+  $("dexPairs").textContent=(liq.dexes?.length?liq.dexes.join(", "):"—")+" / "+(liq.pairCount??0);
+  $("lp").textContent=liq.lpStatus?.status||"NOT VERIFIED";
+  badge("liquidityBadge",liq.status||"MARKET DATA",liq.status==="MARKET_DATA_FOUND"?"live":"watch");
+ }else{["liquidity","volume","dexPairs","lp"].forEach(id=>$(id).textContent="NOT VERIFIED");badge("liquidityBadge","DATA UNAVAILABLE","error")}
+
+ // 5 — Claims (without explicit project claims this correctly remains empty)
+ if(claims.ok){
+  const c=claims.counts||{};$("claimsChecked").textContent=(c.verified||0)+(c.mismatch||0)+(c.unverified||0);$("verified").textContent=c.verified??0;$("mismatch").textContent=c.mismatch??0;$("unverified").textContent=c.unverified??0;
+  badge("claimsBadge",claims.status||"NO CLAIMS SUPPLIED",claims.status==="VERIFIED"?"live":claims.status==="MISMATCH_FOUND"?"error":"watch");
+ }else{["claimsChecked","verified","mismatch","unverified"].forEach(id=>$(id).textContent="NOT VERIFIED");badge("claimsBadge","DATA UNAVAILABLE","error")}
+
+ // 6 — Mechanics
+ if(mech.ok){
+  $("buyTax").textContent=mech.taxes?.buy?.percent!=null?percent(mech.taxes.buy.percent):"NOT VERIFIED";
+  $("sellTax").textContent=mech.taxes?.sell?.percent!=null?percent(mech.taxes.sell.percent):"NOT VERIFIED";
+  $("transferTax").textContent=mech.taxes?.transfer?.percent!=null?percent(mech.taxes.transfer.percent):"NOT VERIFIED";
+  const burnEvidence=mech.burn?.status==="ON_CHAIN_EVIDENCE";
+  const bb=mech.buybackAndBurn?.detected===true;
+  $("burnBuyback").textContent=bb?"BUYBACK + BURN":burnEvidence?"BURN EVIDENCE":"NOT VERIFIED";
+  badge("mechanicsBadge","MECHANICS SCANNED",burnEvidence||bb?"live":"watch");
+ }else{["buyTax","sellTax","transferTax","burnBuyback"].forEach(id=>$(id).textContent="NOT VERIFIED");badge("mechanicsBadge","DATA UNAVAILABLE","error")}
+
+ const successes=[supply,market,holders,control,liq,claims,mech].filter(x=>x.ok).length;
+ setGlobal(successes>=5?"live":"",successes+"/7 DATA MODULES");
+ helper.textContent="Scan complete · Missing evidence remains NOT VERIFIED · No values are guessed.";
+ scan.disabled=false;
 }
-
-token.classList.add("show");
-
-address.textContent=value;
-
-tokenName.textContent="Scanning token…";
-
-tokenMeta.textContent="";
-
-totalSupply.textContent="…";
-circulating.textContent="…";
-knownBurned.textContent="…";
-nextUnlock.textContent="…";
-holderCount.textContent="…";
-largestWallet.textContent="…";
-top10.textContent="…";
-top20.textContent="…";
-holdersBadge.className="badge";
-holdersBadge.textContent="SCANNING";
-
-supplyBadge.className="badge";
-supplyBadge.textContent="SCANNING";
-
-setState("","SCANNING");
-
-helper.textContent=
-"Reading verified on-chain data from Arc…";
-
-scan.disabled=true;
-
-
-try{
-
-
-const [
-tokenResponse,
-supplyResponse
-]=await Promise.all([
-
-fetch(
-"/api/token?address="+encodeURIComponent(value),
-{cache:"no-store"}
-),
-
-fetch(
-"/api/supply?token="+encodeURIComponent(value),
-{cache:"no-store"}
-)
-
-]);
-
-
-let data={};
-let supplyData={};
-let unlockData={};
-let marketData={};
-let holdersData={};
-
-
-try{
-data=await tokenResponse.json();
-}catch(e){}
-
-
-try{
-supplyData=await supplyResponse.json();
-}catch(e){}
-
-
-if(!tokenResponse.ok || !data.ok){
-
-throw new Error(
-data.error || "Token scan failed"
-);
-
-}
-
-
-const t=data.token || {};
-
-// Contract-first market lookup. The server endpoint verifies the Arc contract
-// against CoinGecko before returning circulating supply.
-try{
-const marketResponse=await fetch(
-"/api/market?address="+encodeURIComponent(value),
-{cache:"no-store"}
-);
-marketData=await marketResponse.json();
-}catch(e){
-marketData={};
-}
-
-try{
-const holdersResponse=await fetch(
-"/api/holders?token="+encodeURIComponent(value),
-{cache:"no-store"}
-);
-holdersData=await holdersResponse.json();
-}catch(e){
-holdersData={};
-}
-
-
-if(t.symbol){
-try{
-const unlockResponse=await fetch(
-"/api/unlock?symbol="+encodeURIComponent(t.symbol),
-{cache:"no-store"}
-);
-unlockData=await unlockResponse.json();
-}catch(e){
-unlockData={};
-}
-}
-
-
-tokenName.textContent=
-(t.name || "Unknown Token")
-+
-(t.symbol ? " ("+t.symbol+")" : "");
-
-
-tokenMeta.textContent=
-"Arc · Decimals: "
-+
-(t.decimals ?? "—")
-+
-" · Source: "
-+
-(data.source || "Arc RPC");
-
-
-totalSupply.textContent=
-compactNumber(t.totalSupply)
-+
-(t.symbol ? " "+t.symbol : "");
-
-
-
-if(
-supplyResponse.ok &&
-supplyData.ok &&
-supplyData.burned &&
-supplyData.burned.amount!==null
-){
-
-knownBurned.textContent=
-compactNumber(supplyData.burned.amount)
-+
-(t.symbol ? " "+t.symbol : "");
-
-}else{
-
-knownBurned.textContent=
-"NOT VERIFIED";
-
-}
-
-
-
-if(
-marketData.ok &&
-marketData.circulatingSupply!==null &&
-marketData.circulatingSupply!==undefined
-){
-
-circulating.textContent=
-compactNumber(marketData.circulatingSupply)
-+
-(t.symbol ? " "+t.symbol : "");
-
-}else{
-
-circulating.textContent=
-"NOT VERIFIED";
-
-}
-
-
-
-if(
-unlockData.ok &&
-unlockData.nextUnlock &&
-unlockData.nextUnlock.date
-){
-
-const u=unlockData.nextUnlock;
-nextUnlock.textContent=
-u.date + (u.amount ? " · " + u.amount : "");
-
-}else{
-
-nextUnlock.textContent=
-"NO SOURCE-REPORTED SCHEDULE";
-
-}
-
-
-
-if(holdersData.ok){
-holderCount.textContent=
-Number.isFinite(Number(holdersData.holders))
-? new Intl.NumberFormat("en-US").format(Number(holdersData.holders))
-: "NOT VERIFIED";
-
-largestWallet.textContent=
-holdersData.largestWalletPct!==null && holdersData.largestWalletPct!==undefined
-? Number(holdersData.largestWalletPct).toFixed(2)+"%"
-: "NOT VERIFIED";
-
-top10.textContent=
-holdersData.top10Pct!==null && holdersData.top10Pct!==undefined
-? Number(holdersData.top10Pct).toFixed(2)+"%"
-: "NOT VERIFIED";
-
-top20.textContent=
-holdersData.top20Pct!==null && holdersData.top20Pct!==undefined
-? Number(holdersData.top20Pct).toFixed(2)+"%"
-: "NOT VERIFIED";
-
-holdersBadge.className="badge live";
-holdersBadge.textContent=holdersData.complete ? "ARCSCAN INDEXED" : "PARTIAL INDEX";
-}else{
-holderCount.textContent="NOT VERIFIED";
-largestWallet.textContent="NOT VERIFIED";
-top10.textContent="NOT VERIFIED";
-top20.textContent="NOT VERIFIED";
-holdersBadge.className="badge";
-holdersBadge.textContent="DATA UNAVAILABLE";
-}
-
-
-supplyBadge.className="badge live";
-
-supplyBadge.textContent=
-"PARTIAL ON-CHAIN";
-
-
-setState(
-"live",
-"ARC RPC LIVE"
-);
-
-
-helper.textContent=
-"On-chain values are shown when verifiable. Missing circulating or unlock evidence is not guessed.";
-
-
-}catch(err){
-
-
-tokenName.textContent=
-"Token Scan";
-
-tokenMeta.textContent="";
-
-totalSupply.textContent="—";
-circulating.textContent="—";
-knownBurned.textContent="—";
-nextUnlock.textContent="—";
-holderCount.textContent="—";
-largestWallet.textContent="—";
-top10.textContent="—";
-top20.textContent="—";
-holdersBadge.className="badge error";
-holdersBadge.textContent="DATA UNAVAILABLE";
-
-
-supplyBadge.className=
-"badge error";
-
-supplyBadge.textContent=
-"DATA UNAVAILABLE";
-
-
-setState(
-"error",
-"SCAN FAILED"
-);
-
-
-helper.textContent=
-err.message ||
-"Arc data could not be read.";
-
-
-}finally{
-
-scan.disabled=false;
-
-}
-
-}
-
-
-scan.addEventListener(
-"click",
-startScan
-);
-
-
-input.addEventListener(
-"keydown",
-e=>{
-if(e.key==="Enter"){
-startScan();
-}
-}
-);
-
+scan.addEventListener("click",startScan);
+input.addEventListener("keydown",e=>{if(e.key==="Enter")startScan()});
 </script>
-
 </body>
 </html>

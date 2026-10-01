@@ -1,7 +1,8 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.ARCYModel=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
  'use strict';
- const labels={supply:['Total Supply','Circulating','Burn Address Balance','Next Unlock'],whales:['Holders','Largest Wallet','Top 10','Top 20'],control:['Mint','Pause','Blacklist','Owner/Admin'],liquidity:['Liquidity','24H Volume','DEX / Pairs','LP Status'],claims:['Claims Checked','Verified','Mismatch','Unverified'],mechanics:['Buy Tax','Sell Tax','Transfer Tax','Burn / Buyback']};
+ const labels={supply:['Total Supply','Circulating Supply','Burn Address Balance','Next Unlock'],whales:['Holder Count','Largest Wallet %','Top 10 Concentration','Top 20 Concentration'],control:['Mint Capability','Pause Capability','Blacklist Capability','Owner / Admin'],liquidity:['Liquidity USD','24H Volume','DEX / Pair Count','LP Status'],activity:['Price','Market Cap / FDV','24H Change','24H Volume'],mechanics:['Buy Tax','Sell Tax','Transfer Tax','Burn / Buyback']};
  const paths={supply:['supply.totalSupply.amount','market.circulatingSupply','supply.burnAddressBalance.amount','unlock.nextUnlock.date'],whales:['holderCount','largestWalletPct','top10Pct','top20Pct'],control:['mint','pause','blacklist','owner / admin (proxy in badge/evidence)'],liquidity:['liquidityUsd','volume24h','dexCount / pairCount','lpStatus'],claims:['counts.checked','counts.verified','counts.mismatch','counts.unverified'],mechanics:['buyTax','sellTax','transferTax','burnMechanism / buybackAndBurn']};
+ paths.activity=['priceUsd','valuation','change24h','volume24h'];
  const zero='0x0000000000000000000000000000000000000000';
  function compact(v){if(v===null||v===undefined||v==='')return 'NOT VERIFIED';const n=Number(v);if(!Number.isFinite(n))return 'NOT VERIFIED';for(const [d,s]of [[1e9,'B'],[1e6,'M'],[1e3,'K']])if(Math.abs(n)>=d)return (n/d).toFixed(1).replace(/\.0$/,'')+s;return new Intl.NumberFormat('en-US',{maximumFractionDigits:6}).format(n);}
  const money=v=>'$'+compact(v);
@@ -37,6 +38,10 @@
    const owner=fact(d,'owner'),admin=fact(d,'admin');fields.push(d?.ok!==false&&[d?.owner,d?.admin].some(detected)?{text:'DETECTED',dataState:'DATA_FOUND'}:owner.dataState==='FRONTEND_MAPPING_FAILED'?owner:admin.dataState==='FRONTEND_MAPPING_FAILED'?admin:{text:'NOT VERIFIED',dataState:d?.dataState==='SOURCE_API_FAILED'?'SOURCE_API_FAILED':'NOT_VERIFIED',reasonCode:'NO_VALIDATED_OWNER_ADMIN',reason:'No nonzero owner/admin authority getter established. Proxy evidence is shown separately.'});
   }else if(name==='liquidity'){
    fields=[read(d,'liquidityUsd',money),read(d,'volume24h',money)];const dex=read(d,'dexCount'),pairs=read(d,'pairCount');fields.push(dex.dataState==='DATA_FOUND'&&pairs.dataState==='DATA_FOUND'?{text:d.dexCount+' DEX · '+d.pairCount+' pairs',dataState:'DATA_FOUND'}:dex.dataState!=='DATA_FOUND'?dex:pairs);fields.push(fact(d,'lpStatus'));
+  }else if(name==='activity'){
+   const price=f=>Number.isFinite(f.value)&&f.value>0?'$'+(f.value<0.01?Number(f.value.toPrecision(6)).toString():compact(f.value)):'NOT VERIFIED';
+   fields=[fact(d,'priceUsd',price),fact(d,'valuation',f=>['MARKET_CAP','FDV'].includes(f.kind)&&Number.isFinite(f.value)&&f.value>0?(f.kind==='FDV'?'FDV ':'MC ')+money(f.value):'NOT VERIFIED'),fact(d,'change24h',f=>Number.isFinite(f.value)?(f.value>0?'+':'')+compact(f.value)+'%':'NOT VERIFIED'),fact(d,'volume24h',f=>Number.isFinite(f.value)&&f.value>=0?money(f.value):'NOT VERIFIED')];
+   fields=fields.map((f,i)=>f.text==='NOT VERIFIED'&&f.dataState==='DATA_FOUND'?missing(d,'Invalid market value at '+paths.activity[i]):f);
   }else if(name==='claims'){
    if(!d||d.ok===false)fields=paths.claims.map(p=>read(d,p));
    else if(d.statusId==='NO_CLAIMS_SUPPLIED')fields=paths.claims.map(()=>({text:'—',dataState:'SOURCE_HAS_NO_DATA',reasonCode:d.reasonCode,reason:d.reason}));
@@ -50,7 +55,7 @@
   const states=fields.map(f=>f.dataState);let badge=states.includes('FRONTEND_MAPPING_FAILED')?'MAPPING FAILED':states.includes('LOADING')?'SCANNING':states.every(x=>x==='SOURCE_API_FAILED')?'SOURCE/API FAILED':states.includes('DATA_FOUND')?'PARTIAL EVIDENCE':states.includes('SOURCE_API_FAILED')?'SOURCE/API FAILED':states.every(x=>x==='SOURCE_HAS_NO_DATA')?'SOURCE HAS NO DATA':'NOT VERIFIED';
   if(name==='claims'&&d?.statusId==='NO_CLAIMS_SUPPLIED')badge='NO CLAIMS SUPPLIED';
   if(name==='control'&&d?.ok!==false&&detected(d?.proxy))badge='PROXY DETECTED';
-  return {fields:fields.map((f,i)=>({...f,label:labels[name][i],path:paths[name][i]})),badge,data:d};
+  return {fields:fields.map((f,i)=>({...f,label:(labels[name]||['Claims Checked','Verified','Mismatch','Unverified'])[i],path:paths[name][i]})),badge,data:d};
  }
  return {labels,paths,compact,summarize};
 });

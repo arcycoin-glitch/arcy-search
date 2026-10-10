@@ -13,6 +13,16 @@ const OFFICIAL=Object.freeze([
   network:'ethereum',chainId:1,address:'0x1f9840a85d5af5bf1d1762f925bdaddc4201f984',
   name:'Uniswap',symbol:'UNI',issuer:'Uniswap',
   proofUrl:'https://developers.uniswap.org/docs/ecosystem/governance/uni'
+ }),
+ Object.freeze({
+  network:'ethereum',chainId:1,address:'0x514910771af9ca656af840dff83e8264ecf986ca',
+  name:'Chainlink',symbol:'LINK',issuer:'Chainlink',
+  proofUrl:'https://docs.chain.link/resources/link-token-contracts'
+ }),
+ Object.freeze({
+  network:'ethereum',chainId:1,address:'0xdac17f958d2ee523a2206206994597c13d831ec7',
+  name:'Tether USD',symbol:'USDT',issuer:'Tether',
+  proofUrl:'https://tether.to/en/supported-protocols/'
  })
 ]);
 function verified(network,address){

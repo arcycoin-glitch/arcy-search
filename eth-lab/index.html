@@ -1,17 +1,145 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ARCY SEARCH — Ethereum Lab</title><style>
-:root{font-family:Inter,system-ui,Arial;color:#eaf6ff;background:#040b15}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#0a2d43 0,transparent 52%),#040b15}main{max-width:1120px;margin:auto;padding:42px 20px 80px}header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:30px}h1{font-size:clamp(25px,4vw,40px);margin:0;letter-spacing:.05em}h1 span{color:#22d4ff}.sub{color:#97b1c4;font-size:13px;margin-top:8px}.chip{border:1px solid #27546c;color:#b5ebf7;background:#0d2534;padding:8px 12px;border-radius:40px;font-size:12px}.search{display:flex;gap:10px;background:#0b1928;border:1px solid #1b4961;padding:12px;border-radius:18px;margin-bottom:12px}.search input{flex:1;min-width:0;border:0;outline:0;color:white;background:transparent;padding:12px;font-size:15px}.search button{border:0;border-radius:10px;background:linear-gradient(130deg,#20dfff,#488cff);padding:12px 23px;color:#001420;font-weight:800;cursor:pointer}.search button:disabled{opacity:.5}#state{color:#9eb5c7;font-size:13px;min-height:24px}#asset{margin:14px 0 23px;color:#d5e8f6}#asset strong{font-size:21px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.card{border:1px solid #1b3d53;border-left:4px solid var(--accent);background:linear-gradient(130deg,#0b2031,#0a1523);border-radius:16px;padding:19px;min-height:225px}.card h2{font-size:16px;margin:0 0 6px}.description{font-size:11px;color:#7f9eae;min-height:28px}.metric{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid #183044;font-size:12px}.metric span{color:#9aafc0}.metric b{text-align:right;overflow-wrap:anywhere;max-width:56%;font-size:12px}.metric b.no{color:#9babb8;font-weight:500}.meta{color:#7d99aa;font-size:11px;margin-top:12px}details{margin-top:12px;color:#a6c7d4;font-size:11px}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:250px;overflow:auto;color:#a8bac7}footer{font-size:12px;color:#7f99a8;margin-top:32px}@media(max-width:860px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:550px){main{padding:22px 13px}header{align-items:start}.grid{grid-template-columns:1fr}.search{flex-direction:column}.search button{width:100%}}</style></head>
-<body><main><header><div><h1>ARCY <span>SEARCH</span></h1><div class="sub">ETHEREUM MAINNET · TOKEN INTELLIGENCE · ISOLATED TEST</div></div><span class="chip">ETH LAB · READ ONLY</span></header><div class="search"><input id="address" aria-label="Token contract address" value="0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48" placeholder="Ethereum ERC-20 contract address"><button id="go">SCAN TOKEN</button></div><p id="state">Experimental. Enter a contract to check independently sourced evidence.</p><div id="asset"></div><div id="cards" class="grid"></div><footer>Evidence is token and network specific. NOT VERIFIED does not mean false or zero. This tool does not execute transactions or provide investment advice.</footer></main><script src="/schema.js"></script><script>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="ARCY SEARCH Ethereum mainnet research lab.">
+<title>ARCY SEARCH — Ethereum Lab</title>
+<style>
+:root{font-family:Inter,system-ui,Arial;color:#eaf6ff;background:#040b15}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at top,#0a2d43 0,transparent 52%),#040b15}
+main{max-width:1120px;margin:auto;padding:42px 20px 80px}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:30px}
+h1{font-size:clamp(25px,4vw,40px);margin:0;letter-spacing:.05em}
+h1 span{color:#22d4ff}
+.sub{color:#97b1c4;font-size:13px;margin-top:8px}
+.chip{border:1px solid #27546c;color:#b5ebf7;background:#0d2534;padding:8px 12px;border-radius:40px;font-size:12px}
+.search{display:flex;gap:10px;background:#0b1928;border:1px solid #1b4961;padding:12px;border-radius:18px;margin-bottom:12px}
+.search input{flex:1;min-width:0;border:0;outline:0;color:white;background:transparent;padding:12px;font-size:15px}
+.search button{border:0;border-radius:10px;background:linear-gradient(130deg,#20dfff,#488cff);padding:12px 23px;color:#001420;font-weight:800;cursor:pointer}
+.search button:disabled{opacity:.5}
+#state{color:#9eb5c7;font-size:13px;min-height:24px}
+#asset{margin:14px 0 23px;color:#d5e8f6;overflow-wrap:anywhere}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+.card{border:1px solid #1b3d53;border-left:4px solid var(--accent);background:linear-gradient(130deg,#0b2031,#0a1523);border-radius:16px;padding:19px;min-height:225px}
+.card h2{font-size:16px;margin:0 0 6px}
+.description{font-size:11px;color:#7f9eae;min-height:28px}
+.metric{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid #183044;font-size:12px}
+.metric span{color:#9aafc0}
+.metric b{text-align:right;overflow-wrap:anywhere;max-width:56%;font-size:12px}
+.metric b.no{color:#9babb8;font-weight:500}
+.meta{color:#7d99aa;font-size:11px;margin-top:12px}
+details{margin-top:12px;color:#a6c7d4;font-size:11px}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:250px;overflow:auto;color:#a8bac7}
+footer{font-size:12px;color:#7f99a8;margin-top:32px}
+@media(max-width:860px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:550px){main{padding:22px 13px}header{align-items:start}.grid{grid-template-columns:1fr}.search{flex-direction:column}.search button{width:100%}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div>
+<h1>ARCY <span>SEARCH</span></h1>
+<div class="sub">ETHEREUM MAINNET · TOKEN INTELLIGENCE · ISOLATED TEST</div>
+</div>
+<span class="chip">ETH LAB · READ ONLY</span>
+</header>
+<div class="search">
+<input id="address" aria-label="Token contract address" spellcheck="false" value="0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48" placeholder="Ethereum ERC-20 contract address">
+<button id="go">SCAN TOKEN</button>
+</div>
+<p id="state" role="status" aria-live="polite">Experimental. Enter a contract to check independently sourced evidence.</p>
+<div id="asset"></div>
+<div id="cards" class="grid"></div>
+<footer>Evidence is token and network specific. NOT VERIFIED does not mean false or zero. This tool does not execute transactions or provide investment advice.</footer>
+</main>
+<script src="/schema.js"></script>
+<script>
 'use strict';
-const defs=window.ARCYEthLabSchema.map(x=>[x.id,x.title,x.accent,x.fields]);
-const $=s=>document.getElementById(s);
-const format=(v,key)=>{if(typeof v==='boolean')return v?'TRUE':'FALSE';if(typeof v==='number'&&Number.isFinite(v)){if(/Usd|volume|valuation/i.test(key))return 'return v.toLocaleString('en-US',{maximumFractionDigits:4})}return String(v)};
-function render(report){const root=$('cards');root.replaceChildren();for(const [id,title,accent,fields] of defs){const card=report?.cards?.[id];const section=document.createElement('section');section.className='card';section.style.setProperty('--accent',accent);const heading=document.createElement('h2');heading.textContent=title;section.append(heading);const desc=document.createElement('div');desc.className='description';desc.textContent=card?.description||'Awaiting verified evidence';section.append(desc);for(const [field,label]of fields){const value=card?.fields?.[field];const row=document.createElement('div');row.className='metric';const name=document.createElement('span');name.textContent=label;const b=document.createElement('b');b.className=value?.value===null||value===undefined?'no':'';b.textContent=value?.value===null||value===undefined?'NOT VERIFIED':(field==='valuation'&&value.kind?value.kind+' ':'')+format(value.value,field);b.title=value?.reason||value?.source||'';row.append(name,b);section.append(row)}const status=document.createElement('div');status.className='meta';status.textContent=card?.status||'NOT SCANNED';section.append(status);if(card){const details=document.createElement('details'),summary=document.createElement('summary'),pre=document.createElement('pre');summary.textContent='View Evidence';pre.textContent=JSON.stringify(card,null,2);details.append(summary,pre);section.append(details)}root.append(section)}}
+const definitions=window.ARCYEthLabSchema;
+const $=id=>document.getElementById(id);
+function format(value,key,kind){
+  if(typeof value==='boolean')return value?'TRUE':'FALSE';
+  if(typeof value==='number'&&Number.isFinite(value)){
+    const out=/(Usd|volume|valuation)/i.test(key)?'$'+value.toLocaleString('en-US',{maximumFractionDigits:2}):value.toLocaleString('en-US',{maximumFractionDigits:5});
+    return (kind?kind+' ':'')+out;
+  }
+  return (kind?kind+' ':'')+String(value);
+}
+function render(report){
+  const root=$('cards');
+  root.replaceChildren();
+  for(const spec of definitions){
+    const card=report?.cards?.[spec.id];
+    const section=document.createElement('section');
+    section.className='card';
+    section.style.setProperty('--accent',spec.accent);
+    const title=document.createElement('h2');
+    title.textContent=spec.title;
+    section.append(title);
+    const description=document.createElement('div');
+    description.className='description';
+    description.textContent=card?.description||'Awaiting verified evidence';
+    section.append(description);
+    for(const [key,label] of spec.fields){
+      const data=card?.fields?.[key];
+      const row=document.createElement('div');
+      row.className='metric';
+      const name=document.createElement('span');
+      name.textContent=label;
+      const result=document.createElement('b');
+      const missing=!data||data.value===null||data.value===undefined;
+      result.className=missing?'no':'';
+      result.textContent=missing?'NOT VERIFIED':format(data.value,key,key==='valuation'?data.kind:null);
+      result.title=data?.reason||data?.source||'';
+      row.append(name,result);
+      section.append(row);
+    }
+    const status=document.createElement('div');
+    status.className='meta';
+    status.textContent=card?.status||'NOT SCANNED';
+    section.append(status);
+    if(card){
+      const details=document.createElement('details');
+      const summary=document.createElement('summary');
+      summary.textContent='View Evidence';
+      const pre=document.createElement('pre');
+      pre.textContent=JSON.stringify(card,null,2);
+      details.append(summary,pre);
+      section.append(details);
+    }
+    root.append(section);
+  }
+}
 render(null);
-async function scan(){const addr=$('address').value.trim();if(!/^0x[0-9a-fA-F]{40}$/.test(addr)){$('state').textContent='Enter a valid Ethereum contract address.';return}const go=$('go');go.disabled=true;$('state').textContent='Reading Ethereum and market sources…';try{const response=await fetch('/api/report?address='+encodeURIComponent(addr),{signal:AbortSignal.timeout(45000),cache:'no-store'});const data=await response.json();if(!response.ok||!data.ok||data.cardCount!==5||!data.cards)throw Error(data.reason||data.error||'Scan response is not a valid five-card report');const asset=data.token;$('asset').textContent=(asset.name||'Unknown token')+' ('+(asset.symbol||'?')+') · Chain '+data.chainId+' · Block '+parseInt(data.block,16);render(data);$('state').textContent='Snapshot complete · '+data.scannedAt+' · Unsupported fields remain NOT VERIFIED.'}catch(e){$('state').textContent='Scan unavailable: '+String(e.message).slice(0,160);$('asset').textContent='';render(null)}finally{go.disabled=false}}
-$('go').addEventListener('click',scan);$('address').addEventListener('keydown',e=>{if(e.key==='Enter')scan()});
-</script></body></html>+v.toLocaleString('en-US',{maximumFractionDigits:2});return v.toLocaleString('en-US',{maximumFractionDigits:4})}return String(v)};
-function render(report){const root=$('cards');root.replaceChildren();for(const [id,title,accent,fields] of defs){const card=report?.cards?.[id];const section=document.createElement('section');section.className='card';section.style.setProperty('--accent',accent);const heading=document.createElement('h2');heading.textContent=title;section.append(heading);const desc=document.createElement('div');desc.className='description';desc.textContent=card?.description||'Awaiting verified evidence';section.append(desc);for(const [field,label]of fields){const value=card?.fields?.[field];const row=document.createElement('div');row.className='metric';const name=document.createElement('span');name.textContent=label;const b=document.createElement('b');b.className=value?.value===null||value===undefined?'no':'';b.textContent=value?.value===null||value===undefined?'NOT VERIFIED':format(value.value,field);b.title=value?.reason||value?.source||'';row.append(name,b);section.append(row)}const status=document.createElement('div');status.className='meta';status.textContent=card?.status||'NOT SCANNED';section.append(status);if(card){const details=document.createElement('details'),summary=document.createElement('summary'),pre=document.createElement('pre');summary.textContent='View Evidence';pre.textContent=JSON.stringify(card,null,2);details.append(summary,pre);section.append(details)}root.append(section)}}
-render(null);
-async function scan(){const addr=$('address').value.trim();if(!/^0x[0-9a-fA-F]{40}$/.test(addr)){$('state').textContent='Enter a valid Ethereum contract address.';return}const go=$('go');go.disabled=true;$('state').textContent='Reading Ethereum and market sources…';try{const response=await fetch('/api/report?address='+encodeURIComponent(addr),{signal:AbortSignal.timeout(45000),cache:'no-store'});const data=await response.json();if(!response.ok||!data.ok)throw Error(data.reason||data.error||'Scan failed');const asset=data.token;$('asset').textContent=(asset.name||'Unknown token')+' ('+(asset.symbol||'?')+') · Chain '+data.chainId+' · Block '+parseInt(data.block,16);render(data);$('state').textContent='Snapshot complete · '+data.scannedAt+' · Unsupported fields remain NOT VERIFIED.'}catch(e){$('state').textContent='Scan unavailable: '+String(e.message).slice(0,160);$('asset').textContent='';render(null)}finally{go.disabled=false}}
-$('go').addEventListener('click',scan);$('address').addEventListener('keydown',e=>{if(e.key==='Enter')scan()});
-</script></body></html>
+async function scan(){
+  const address=$('address').value.trim();
+  if(!/^0x[0-9a-fA-F]{40}$/.test(address)){
+    $('state').textContent='Enter a valid Ethereum contract address.';
+    return;
+  }
+  const button=$('go');
+  button.disabled=true;
+  $('state').textContent='Reading Ethereum and market sources…';
+  try{
+    const response=await fetch('/api/report?address='+encodeURIComponent(address),{signal:AbortSignal.timeout(45000),cache:'no-store'});
+    const data=await response.json();
+    if(!response.ok||data.ok!==true||data.cardCount!==5||!data.cards)throw Error(data.reason||data.error||'Response is not a valid five-card scan');
+    for(const spec of definitions)if(!data.cards[spec.id]||spec.fields.some(([key])=>!data.cards[spec.id].fields?.[key]))throw Error('Missing required card or field in scan response');
+    const asset=data.token;
+    $('asset').textContent=(asset.name||'Unknown token')+' ('+(asset.symbol||'?')+') · Chain '+data.chainId+' · Block '+Number.parseInt(data.block,16);
+    render(data);
+    $('state').textContent='Snapshot complete · '+data.scannedAt+' · Unsupported metrics remain NOT VERIFIED.';
+  }catch(error){
+    $('state').textContent='Scan unavailable: '+String(error.message).slice(0,150);
+    $('asset').textContent='';
+    render(null);
+  }finally{button.disabled=false}
+}
+$('go').addEventListener('click',scan);
+$('address').addEventListener('keydown',event=>{if(event.key==='Enter')scan()});
+</script>
+</body>
+</html>

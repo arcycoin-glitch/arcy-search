@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "node dev.cjs",
     "test": "node --test test/*.test.js",
-    "smoke": "node scripts/live-smoke.cjs"
+    "smoke": "node scripts/live-smoke.cjs",
+    "smoke:robinhood": "node scripts/live-robinhood.cjs"
   }
 }

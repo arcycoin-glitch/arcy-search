@@ -1,0 +1,12 @@
+{
+  "name": "arcy-eth-lab",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node dev.cjs",
+    "test": "node --test test/*.test.js"
+  }
+}

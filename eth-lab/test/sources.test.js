@@ -26,8 +26,8 @@ test('accept strict explorer count format only',()=>{
 test('candidate addresses must be distinct and valid',()=>{
  const a='0x'+'a'.repeat(40);
  assert.deepEqual(holders([{address:{hash:a}}],token),[a]);
- assert.deepEqual(holders([{address:a},{address:a}],token),[]);
- assert.deepEqual(holders([{address:'x'}],token),[]);
+ assert.equal(holders([{address:a},{address:a}],token),null);
+ assert.equal(holders([{address:'x'}],token),null);
 });
 test('unproven top holders never return verified percentages',()=>{
  const addresses=Array.from({length:20},(_,i)=>'0x'+(i+1).toString(16).padStart(40,'0'));

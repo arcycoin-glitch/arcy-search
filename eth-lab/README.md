@@ -89,3 +89,12 @@ The module is isolated and must pass live USDC, UNI, LINK and intentionally mism
 ### Mandatory Codex acceptance gate
 
 Run `npm test` under Node 22 in `eth-lab/`. Check USDC, UNI, LINK and invalid/non-contract addresses against live Ethereum chain ID 1, current RPC blocks, explorer evidence, and price-provider payloads. Inspect any SOURCE_REPORTED status independently. Confirm no secret-bearing RPC URL is sent to the browser. Confirm no private key, wallet connect, funds, token launches, swaps, or trading execution. Verify five cards and twenty fields exactly. Test mobile/desktop, data errors, provider 404/429/500, network delays, malformed JSON and RPC mismatches. Do not modify or redeploy production `arcy-website` until the full regression suite and independent sign-off pass.
+
+## API throttling (test-stage defense in depth; not a public-launch gate)
+
+- `GET /api/report` and `GET /api/token` share a **24 valid requests / 60 seconds / client IP** fixed-window quota per warm Node/Vercel function instance.
+- Excess valid requests receive **HTTP 429** with `RATE_LIMITED`, `Retry-After`, and remaining-request headers, before starting expensive provider calls.
+- Only Vercel-edge-supplied IP headers are trusted on Vercel; local runs use the socket peer IP. Untrusted caller-supplied forwarded headers are never used off Vercel.
+- Memory is bounded to 4096 active buckets per instance; over-capacity clients are rejected rather than evicting active quotas.
+- **Critical limitation:** The limiter is in memory and **NOT shared across Vercel serverless instances or regions**. It is a partial protection, NOT a globally enforced quota. A distributed Vercel WAF rate-limit rule (or another shared, authoritative limiter) must be enabled and independently tested before the service is publicly exposed. Do not disable Vercel Preview Authentication in order to test or bypass this requirement.
+- Recommended future WAF configuration for this isolated test project (not active yet): limit `/api/report` and `/api/token` to **30 requests per IP per 60 seconds**, fixed window, return **HTTP 429**. Review applicable Vercel plan pricing and permissions before activation. Do not apply to the production ARCY site without separate approval.

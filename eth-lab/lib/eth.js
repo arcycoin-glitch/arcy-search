@@ -52,7 +52,7 @@ async function inspect(address){
   const name=nameResult.status==='fulfilled'?abiString(nameResult.value):null;
   const symbol=symbolResult.status==='fulfilled'?abiString(symbolResult.value):null;
   return {
-    ok:true,chainId:CHAIN_ID,address:normalized,block,scannedAt:new Date().toISOString(),token:{name,symbol,decimals},
+    ok:true,chainId:CHAIN_ID,address:normalized,block,scannedAt:new Date().toISOString(),token:{name,symbol,decimals},totalSupplyRaw:raw.toString(),
     fields:{
       totalSupply:supply,burnAddressBalance:burn,
       circulatingSupply:unknown('On-chain total supply is not verified circulating supply. External contract-matched evidence is required.'),

@@ -5,7 +5,6 @@ const market=require('./market');
 const control=require('./control');
 const holdersSource=require('./holders');
 const circulation=require('./circulating');
-const unlocks=require('./unlocks');
 const security=require('./security');
 const schema=require('../schema');
 function unavailable(description,fields){
@@ -13,6 +12,12 @@ function unavailable(description,fields){
 }
 function copyFields(source,keys,description){
  return evidence.card(Object.fromEntries(keys.map(key=>[key,source.fields[key]||evidence.unknown('Metric adapter has not returned an evidence field.')])),description);
+}
+function burnAddressPercent(total,burn,block,address){
+ const a=Number(total?.value), b=Number(burn?.value);
+ if(total?.status!=='ON_CHAIN'||burn?.status!=='ON_CHAIN'||!Number.isFinite(a)||!Number.isFinite(b)||a<=0||b<0||b>a)
+ return evidence.unknown('Standard burn-address share cannot be reconciled.','BURN_SHARE_NOT_VERIFIED');
+ return evidence.found(Math.round(b/a*1000000)/10000,'Ethereum RPC',[{block,address,method:'balanceOf(0x0 and 0xdead) / totalSupply()',scope:'Current balances only, not historic burned total.'}],'ON_CHAIN_DERIVED');
 }
 function mechanicsCard(controls,securityData={}){
  const owner=controls.fields?.owner;
@@ -45,7 +50,7 @@ async function build(address){
    totalSupply:onChain(t.fields.totalSupply),
    circulatingSupply:circ,
    burnAddressBalance:onChain(t.fields.burnAddressBalance),
-   nextUnlock:unlocks.inspect(t.address)
+   burnAddressPct:burnAddressPercent(t.fields.totalSupply,t.fields.burnAddressBalance,t.block,t.address)
  },'Pinned-block on-chain supply and standard burn address balances.');
  const holders=copyFields(h,['holderCount','largestWalletPct','top10Pct','top20Pct'],'Explorer-reported holder count; concentration not asserted without complete rankings.');
  const liquidity=copyFields(m,['liquidityUsd','volume24h','dexPairCount','lpStatus'],'Exact-matched source-reported market data. LP permissions remain unverified.');
@@ -62,4 +67,4 @@ async function build(address){
    warnings:['Experimental prototype — not financial advice.','Market APIs report source values; they are not independently verified on-chain.','Missing evidence never becomes zero, false or a simulated value.']
  };
 }
-module.exports={build,copyFields,mechanicsCard};
+module.exports={build,copyFields,mechanicsCard,burnAddressPercent};

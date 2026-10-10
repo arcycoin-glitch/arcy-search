@@ -110,14 +110,17 @@ const SEARCH=/^[\p{L}\p{N}\s.$_+\-&]{2,48}$/u;
 async function discover({query}){
  const q=query.normalize('NFKC').trim().replace(/\s+/g,' ');
  if(!SEARCH.test(q)||ADDRESS.test(q))throw Error('Invalid search');
+ let responsive=false;
  const candidates=[];
- try{candidates.push(...stocks.search(await officialAssets(),q).map(x=>({...x,network:cfg.id,chainId:cfg.chainId})))}catch{}
+ try{const registry=await officialAssets();responsive=true;candidates.push(...stocks.search(registry,q).map(x=>({...x,network:cfg.id,chainId:cfg.chainId})))}catch{}
  try{
   const res=await fetch('https://api.dexscreener.com/latest/dex/search/?q='+encodeURIComponent(q),{
    headers:{accept:'application/json'},signal:AbortSignal.timeout(8000)
   });
   if(res.ok){
    const body=await readJson(res,2*1024*1024);
+   if(!body||typeof body!=='object'||(body.pairs!==null&&!Array.isArray(body.pairs)))throw Error('Invalid search source');
+   responsive=true;
    const lower=q.toLocaleLowerCase('en-US');
    for(const pair of Array.isArray(body?.pairs)?body.pairs.slice(0,400):[]){
     if(pair?.chainId!==cfg.dexScreenerChainId)continue;
@@ -133,6 +136,7 @@ async function discover({query}){
    }
   }
  }catch{}
+ if(!responsive)throw Error('Robinhood discovery providers unavailable');
  const seen=new Set();
  return candidates.filter(x=>{if(seen.has(x.address))return false;seen.add(x.address);return true}).slice(0,12);
 }

@@ -66,3 +66,11 @@ Live-provider integration testing, production RPC reconciliation, complete holde
 - For more than 30 holders, Holder Count is source-reported only. Concentration metrics remain `NOT VERIFIED` until a scalable and independently tested indexed snapshot pipeline exists.
 - Full-supply reconciliation cannot establish the quality of individual project claims, economic wallet ownership, beneficial owners or multi-wallet clustering. Contracts with rebasing or nonstandard balance semantics may fail this strict test.
 - No live Blockscout pagination or Ethereum mainnet end-to-end verification was completed during this implementation. Audit the API response shape and request timeouts before considering this production ready.
+
+## Large-token Holder & Whale — ranked candidate audit
+
+The new `lib/large-holders.js` extends support beyond small (20–30) holder tokens. For large tokens, it checks the first 21 **Blockscout balance-ranked candidate addresses**, rejects duplicate or increasing source balances, and reads every candidate's current balance at the same pinned Ethereum block. If even one candidate's pinned RPC balance differs from Blockscout's reported balance, no concentration figure is shown.
+
+Passing fields are explicitly marked `SOURCE_REPORTED_RPC_RECONCILED` rather than `ONCHAIN_VERIFIED`. Explorer ranking may describe a different block, and the first 21 source records do not independently prove no higher-ranked wallet has been omitted. These values must never be advertised as a complete verified global holder snapshot. Explorer-reported holder counts are likewise not independent wallet enumeration.
+
+The module is isolated and must pass live USDC, UNI, LINK and intentionally mismatched-index tests before moving to production. Unit scenarios include 21 sorted candidates, duplicates, ordering defects, malformed responses and balance disagreements. API latency, public RPC throttling, and Blockscout item encoding still need live integration verification.

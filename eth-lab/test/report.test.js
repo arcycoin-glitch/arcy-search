@@ -69,3 +69,23 @@ test('a copied source card always uses requested production keys',()=>{
  assert.equal(x.fields.volume24h.value,2);
  assert.equal(x.fields.missing.value,null);
 });
+
+
+test('quoted top-liquidity pool does not hide lower-liquidity valid base-token price',()=>{
+ const quoted={...pair,pairAddress:'0x'+'d'.repeat(40),baseToken:{address:'0x'+'b'.repeat(40)},quoteToken:{address:token},liquidity:{usd:1000},priceUsd:'42',marketCap:999999};
+ const base={...pair,pairAddress:'0x'+'e'.repeat(40),liquidity:{usd:100},priceUsd:'1.05',marketCap:1050,priceChange:{h24:3.5}};
+ const x=parse([quoted,base],token);
+ assert.equal(x.fields.priceUsd.value,'1.05');
+ assert.equal(x.fields.valuation.value,1050);
+ assert.equal(x.fields.change24h.value,3.5);
+ assert.equal(x.primaryPair,base.pairAddress);
+ assert.equal(x.fields.volume24h.value,20);
+});
+test('market schema labels partial aggregates as tracked or returned, not Ethereum-wide totals',()=>{
+ const liquidity=schema.find(x=>x.id==='liquidity').fields;
+ const activity=schema.find(x=>x.id==='activity').fields;
+ assert.match(liquidity.find(([key])=>key==='liquidityUsd')[1],/Tracked/);
+ assert.match(liquidity.find(([key])=>key==='volume24h')[1],/Tracked/);
+ assert.match(liquidity.find(([key])=>key==='dexPairCount')[1],/Returned/);
+ assert.match(activity.find(([key])=>key==='volume24h')[1],/Tracked/);
+});

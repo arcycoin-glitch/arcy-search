@@ -1,6 +1,8 @@
 'use strict';
 const {normalizeQuery,discover}=require('../lib/discover');
 const {enforce}=require('../lib/rate-limit');
+const {createCache}=require('../lib/discovery-cache');
+const cachedDiscovery=createCache(discover);
 module.exports=async function handler(req,res){
  res.setHeader('Content-Type','application/json; charset=utf-8');
  res.setHeader('Cache-Control','no-store');
@@ -13,8 +15,9 @@ module.exports=async function handler(req,res){
  if(!q)return res.status(400).json({ok:false,error:'VALID_QUERY_REQUIRED'});
  if(!enforce(req,res))return;
  try{
-  const matches=await discover(q);
-  return res.status(200).json({ok:true,query:q,chainId:1,source:'DexScreener / CoinGecko',identityVerified:false,matches,note:'Search results are source-reported candidates, NOT verified projects. Confirm network and contract before analysis.'});
+  const result=await cachedDiscovery.find(q);
+  const matches=result.matches;
+  return res.status(200).json({ok:true,query:q,chainId:1,source:'DexScreener / CoinGecko',identityVerified:false,matches,sourceFetchedAt:new Date(result.fetchedAt).toISOString(),cacheAgeMs:result.cacheAgeMs,note:'Search results are source-reported candidates, NOT verified projects. Confirm network and contract before analysis.'});
  }catch{
   return res.status(502).json({ok:false,error:'TOKEN_DISCOVERY_UNAVAILABLE',reason:'Token search provider did not return a usable response.'});
  }

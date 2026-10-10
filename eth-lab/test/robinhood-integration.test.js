@@ -162,3 +162,58 @@ test('Robinhood official Stock Token discovery survives chain-label normalizatio
   assert.equal(y.candidates[0].address,B);
  }finally{global.fetch=original}
 });
+
+test('Robinhood public RPC 403 fails over safely to dRPC and restarts pinned snapshot',async()=>{
+ const original=global.fetch,called=[];
+ try{
+  global.fetch=async(url,init)=>{
+   const method=JSON.parse(init.body).method;
+   const request=JSON.parse(init.body);
+   const publicHost=new URL(String(url)).hostname==='rpc.mainnet.chain.robinhood.com';
+   called.push({provider:publicHost?'official':'backup',method});
+   if(publicHost)return new Response('access denied body must not leak',{status:403});
+   const result=method==='eth_chainId'?'0x1237':
+    method==='eth_blockNumber'?'0x521':
+    method==='eth_getCode'?'0x60016001':
+    method==='eth_call'?request.params[0].data.slice(0,10)==='0x313ce567'?word(18):
+     request.params[0].data.slice(0,10)==='0x18160ddd'?word(5000000000000000000n):word(0):null;
+   if(result===null)throw Error('Unexpected RPC method');
+   return new Response(JSON.stringify({jsonrpc:'2.0',id:request.id,result}),{status:200});
+  };
+  const snapshot=await rpc.inspectToken({address:A});
+  assert.equal(snapshot.totalSupply,'5');
+  assert.equal(snapshot.block,'0x521');
+  assert.equal(snapshot.chainId,4663);
+  assert.deepEqual(called.filter(x=>x.provider==='official').map(x=>x.method),['eth_chainId']);
+  assert.ok(called.filter(x=>x.provider==='backup').every(x=>x.provider==='backup'));
+  assert.deepEqual(called.filter(x=>x.provider==='backup').slice(0,3).map(x=>x.method),[
+   'eth_chainId','eth_blockNumber','eth_getCode']);
+ }finally{global.fetch=original}
+});
+test('wrong backup RPC chain ID never accepted even after official provider 403',async()=>{
+ const original=global.fetch;
+ try{
+  global.fetch=async(url,init)=>{
+   if(String(url).includes('rpc.mainnet.chain.robinhood.com'))return new Response('403',{status:403});
+   const req=JSON.parse(init.body);
+   return new Response(JSON.stringify({jsonrpc:'2.0',id:req.id,result:'0xb626'}));
+  };
+  await assert.rejects(rpc.inspectToken({address:A}),/mismatch/);
+ }finally{global.fetch=original}
+});
+test('when both Robinhood RPC providers deny requests, the error stays explicit',async()=>{
+ const original=global.fetch;
+ try{
+  global.fetch=async()=>new Response('do not show this secret',{status:403});
+  await assert.rejects(rpc.inspectToken({address:A}),e=>
+   e.message==='Robinhood RPC HTTP 403'&&!e.message.includes('secret'));
+ }finally{global.fetch=original}
+});
+test('configured Robinhood RPC URL is prioritized and backup can be disabled',()=>{
+ const primary='https://robinhood-mainnet.g.alchemy.com/v2/TESTONLY';
+ const list=rpc.providers({ROBINHOOD_RPC_URL:primary});
+ assert.equal(list[0],primary);
+ assert.equal(list[1],'https://robinhood.drpc.org/');
+ assert.equal(rpc.providers({ROBINHOOD_RPC_URL:primary,ROBINHOOD_RPC_FALLBACK_URL:'disabled'}).length,1);
+ assert.throws(()=>rpc.providers({ROBINHOOD_RPC_URL:'http://insecure.rpc.example'}),/HTTPS/);
+});

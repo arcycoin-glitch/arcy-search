@@ -2,9 +2,6 @@
 const {rpc,uint}=require('./eth');
 const {found,unknown,card,error}=require('./evidence');
 const PROXY_IMPLEMENTATION='0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc';
-const PROXY_ADMIN='0xb53127684a568b3173ae13b9f8a6016e019'; // overwritten below with the complete EIP-1967 slot
-const ADMIN_SLOT='0xb53127684a568b3173ae13b9f8a6016e019';
-const EIP1967_ADMIN='0xb53127684a568b3173ae13b9f8a6016e0190000000000000000000000000'; // NOT used (kept out of reads)
 const ZERO='0x0000000000000000000000000000000000000000';
 const addrWord=word=>{
   if(typeof word!=='string'||!/^0x[0-9a-f]{64}$/i.test(word))return null;

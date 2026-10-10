@@ -68,13 +68,15 @@ function format(value,key,kind){
   let formatted;
   if(typeof value==='number'&&Number.isFinite(value)){
     formatted=value.toLocaleString('en-US',{maximumFractionDigits:percent?4:usd&&key!=='priceUsd'?2:12});
-  }else if(typeof value==='string'&&/^-?\\d+(?:\\.\\d+)?$/.test(value)){
+  }else if(typeof value==='string'&&/^-?\d+(?:\.\d+)?$/.test(value)){
     const parts=value.split('.');
-    formatted=parts[0].replace(/\\B(?=(\\d{3})+(?!\\d))/g,',')+(parts[1]!==undefined?'.'+parts[1]:'');
+    formatted=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',')+(parts[1]!==undefined?'.'+parts[1]:'');
   }else{
     return prefix+String(value);
   }
-  return prefix+(usd?'function render(report){
+  return prefix+(usd?'$':'')+formatted+(percent?'%':'');
+}
+function render(report){
   const root=$('cards');
   root.replaceChildren();
   for(const spec of definitions){

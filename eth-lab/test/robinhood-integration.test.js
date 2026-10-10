@@ -217,3 +217,19 @@ test('configured Robinhood RPC URL is prioritized and backup can be disabled',()
  assert.equal(rpc.providers({ROBINHOOD_RPC_URL:primary,ROBINHOOD_RPC_FALLBACK_URL:'disabled'}).length,1);
  assert.throws(()=>rpc.providers({ROBINHOOD_RPC_URL:'http://insecure.rpc.example'}),/HTTPS/);
 });
+
+test('Robinhood RPC never submits transactions and rejects a wrong-chain fallback',async()=>{
+ const original=global.fetch;
+ const attempted=[];
+ try{
+  global.fetch=async(url,opts)=>{
+   const payload=JSON.parse(opts.body);
+   attempted.push(payload.method);
+   if(String(url).includes('rpc.mainnet.chain.robinhood.com'))return new Response('access denied',{status:403});
+   return new Response(JSON.stringify({jsonrpc:'2.0',id:payload.id,result:'0xb626'}));
+  };
+  await assert.rejects(rpc.rpc('eth_chainId',[]),/mismatch/);
+  await assert.rejects(rpc.rpc('eth_sendRawTransaction',['0x01']),/not allowed in read-only lab/);
+  assert.ok(attempted.every(m=>m==='eth_chainId'));
+ }finally{global.fetch=original}
+});

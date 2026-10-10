@@ -14,7 +14,7 @@ module.exports=async function handler(req,res){
  if(!enforce(req,res))return;
  try{
   const matches=await discover(q);
-  return res.status(200).json({ok:true,query:q,chainId:1,source:'DexScreener',identityVerified:false,matches,note:'Search results are source-reported candidates, NOT verified projects. Confirm network and contract before analysis.'});
+  return res.status(200).json({ok:true,query:q,chainId:1,source:'DexScreener / CoinGecko',identityVerified:false,matches,note:'Search results are source-reported candidates, NOT verified projects. Confirm network and contract before analysis.'});
  }catch{
   return res.status(502).json({ok:false,error:'TOKEN_DISCOVERY_UNAVAILABLE',reason:'Token search provider did not return a usable response.'});
  }

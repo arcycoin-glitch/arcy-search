@@ -98,3 +98,14 @@ Run `npm test` under Node 22 in `eth-lab/`. Check USDC, UNI, LINK and invalid/no
 - Memory is bounded to 4096 active buckets per instance; over-capacity clients are rejected rather than evicting active quotas.
 - **Critical limitation:** The limiter is in memory and **NOT shared across Vercel serverless instances or regions**. It is a partial protection, NOT a globally enforced quota. A distributed Vercel WAF rate-limit rule (or another shared, authoritative limiter) must be enabled and independently tested before the service is publicly exposed. Do not disable Vercel Preview Authentication in order to test or bypass this requirement.
 - Recommended future WAF configuration for this isolated test project (not active yet): limit `/api/report` and `/api/token` to **30 requests per IP per 60 seconds**, fixed window, return **HTTP 429**. Review applicable Vercel plan pricing and permissions before activation. Do not apply to the production ARCY site without separate approval.
+
+## Ethereum name / symbol discovery (isolated preview)
+
+The ETH Lab input supports token name, ticker or a full Ethereum ERC-20 contract address:
+- `GET /api/discover?q=Uniswap` obtains matching **Ethereum** contract candidates from DexScreener and, when coverage is insufficient, CoinGecko's exact Ethereum platform-contract record.
+- Results show the **full contract** and original source. Same-name tokens remain separate choices; candidates have `identityVerified:false` and must not be shown as issuer-verified. Selection is mandatory before invoking the existing report API.
+- `BUNKER` can yield several unrelated Ethereum contracts. A project name, trading volume, logo or popularity does not establish authenticity.
+- Known mainnet contract addresses remain directly scannable; names do not replace address matching for on-chain evidence.
+- Search provider responses can omit valid tokens, rate-limit or fail, especially for recently launched projects. A missing result does not prove a token is nonexistent. Confirm chain and full contract using independent official channels before relying on an analysis.
+- Name search shares the existing per-process request limiter with report/token calls, has 8-second bounded DexScreener calls, bounded CoinGecko detail lookups (maximum three), response size bounds, a 12-candidate output cap, and a successful-results-only two-minute/64-entry per-runtime cache. Cache metadata records source retrieval time, not a validated on-chain timestamp.
+- Tested on Node 22+ via `npm test`, live `Uniswap`, `USDC` and `BUNKER` searches, and Chromium at 1440/768/390/320px; this is not authorization to disable preview SSO or publish without globally enforced WAF limits and further acceptance review.

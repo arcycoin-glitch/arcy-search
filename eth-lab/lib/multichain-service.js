@@ -6,6 +6,7 @@ const ethereumDiscover=require('./discover');
 const ethereumToken=require('./eth');
 const robinhood=require('./robinhood-adapter');
 const chains=require('./chains');
+const identities=require('./token-identity');
 const {createCache}=require('./discovery-cache');
 const ethereumAdapter={
  async inspectToken({address}){
@@ -24,7 +25,11 @@ function parseChain(raw){
  return chains.chain(value).id;
 }
 async function report({network='ethereum',address}){
- return engine.report({network,address});
+ const result=await engine.report({network,address});
+ // Chain-scoped issuer proof is independent of price, safety and risk status.
+ const official=identities.verified(network,result.address);
+ if(official)result.tokenIdentity=official;
+ return result;
 }
 async function token({network='ethereum',address}){
  if(network==='ethereum')return ethereumToken.inspect(address);
@@ -40,10 +45,18 @@ async function token({network='ethereum',address}){
 }
 async function discover({network='ethereum',query}){
  const cache=network==='ethereum'?ethCache:rhCache;
- const response=await cache.find(query);
+ let response,providerError=false;
+ try{response=await cache.find(query)}
+ catch(error){
+  // An exact issuer-sourced contract may be offered even if market search is down.
+  if(!identities.knownMatches(network,query).length)throw error;
+  response={matches:[],fetchedAt:Date.now(),cacheAgeMs:0};
+  providerError=true;
+ }
+ const matches=identities.rank(network,query,response.matches);
  return {ok:true,query,chainId:chains.chain(network).chainId,network,
-  matches:response.matches,sourceFetchedAt:new Date(response.fetchedAt).toISOString(),
-  cacheAgeMs:response.cacheAgeMs,identityVerified:false,
-  note:'Name matches are candidates only. Confirm network and full contract.'};
+  matches,sourceFetchedAt:new Date(response.fetchedAt).toISOString(),
+  cacheAgeMs:response.cacheAgeMs,providerError,
+  note:'Official contract matches require an exact chain+address match to first-party sources. Other search results remain NOT VERIFIED; contract identity does not establish investment safety.'};
 }
 module.exports={parseChain,report,token,discover,engine};

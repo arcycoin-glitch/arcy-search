@@ -5,6 +5,8 @@ const market=require('./market');
 const control=require('./control');
 const holdersSource=require('./holders');
 const circulation=require('./circulating');
+const unlocks=require('./unlocks');
+const security=require('./security');
 const schema=require('../schema');
 function unavailable(description,fields){
  return evidence.card(Object.fromEntries(fields.map(([key,reason])=>[key,evidence.unknown(reason)])),description);
@@ -12,7 +14,7 @@ function unavailable(description,fields){
 function copyFields(source,keys,description){
  return evidence.card(Object.fromEntries(keys.map(key=>[key,source.fields[key]||evidence.unknown('Metric adapter has not returned an evidence field.')])),description);
 }
-function mechanicsCard(controls){
+function mechanicsCard(controls,securityData={}){
  const owner=controls.fields?.owner;
  const proxy=controls.fields?.proxyImplementation;
  const ownerAdmin=owner?.dataState==='DATA_FOUND'
@@ -22,8 +24,8 @@ function mechanicsCard(controls){
    ?{...proxy,value:'EIP-1967 implementation: '+proxy.value,scope:'An implementation slot is populated; verify admin, beacon, UUPS and delegatecall behavior separately.'}
    :evidence.unknown('No EIP-1967 implementation established; absence does not prove non-upgradeability.','ARCHITECTURE_NOT_VERIFIED');
  const result=evidence.card({
-   tradingTaxes:evidence.unknown('No bytecode-matched reviewed adapter for token trading fees. DEX fees are separate.','TRADING_TAXES_NOT_VERIFIED'),
-   mintCapability:evidence.unknown('Mint capability cannot be inferred from ERC-20 metadata or owner() alone.','MINT_CAPABILITY_NOT_VERIFIED'),
+   tradingTaxes:securityData.taxes||evidence.unknown('No contract-matched source fee observation.','TRADING_TAXES_NOT_VERIFIED'),
+   mintCapability:securityData.mint||evidence.unknown('Mint authority requires a verified source observation.','MINT_CAPABILITY_NOT_VERIFIED'),
    ownerAdmin,
    contractArchitecture
  },'Four production fields. Reports only confirmed getter/storage evidence, not inferred privileges.');
@@ -32,22 +34,23 @@ function mechanicsCard(controls){
 }
 async function build(address){
  const t=await inspectToken(address);
- const [marketResult,controlResult,holderResult,circulatingResult]=await Promise.allSettled([market.inspect(t.address),control.inspect(t.address,t.block),holdersSource.inspect(t.address,t.block,t.totalSupplyRaw),circulation.inspect(t.address,t.fields.totalSupply.value)]);
+ const [marketResult,controlResult,holderResult,circulatingResult,securityResult]=await Promise.allSettled([market.inspect(t.address),control.inspect(t.address,t.block),holdersSource.inspect(t.address,t.block,t.totalSupplyRaw),circulation.inspect(t.address,t.fields.totalSupply.value),security.inspect(t.address)]);
  const m=marketResult.status==='fulfilled'?marketResult.value:market.failure(marketResult.reason);
  const c=controlResult.status==='fulfilled'?controlResult.value:control.failure(controlResult.reason);
  const h=holderResult.status==='fulfilled'?holderResult.value:holdersSource.blank('Holder provider request failed.','SOURCE_API_FAILED');
  const circ=circulatingResult.status==='fulfilled'?circulatingResult.value:evidence.error(circulatingResult.reason,'CoinGecko');
+ const sec=securityResult.status==='fulfilled'?securityResult.value:{};
  const onChain=x=>x?.status==='ON_CHAIN'?evidence.found(x.value,'Ethereum RPC',[{method:x.method,block:t.block,address:t.address}],'ON_CHAIN'):evidence.unknown(x?.reason||'No on-chain verification available.');
  const supply=evidence.card({
    totalSupply:onChain(t.fields.totalSupply),
    circulatingSupply:circ,
    burnAddressBalance:onChain(t.fields.burnAddressBalance),
-   nextUnlock:evidence.unknown('No exact-contract verified token vesting/unlock schedule is connected.')
+   nextUnlock:unlocks.inspect(t.address)
  },'Pinned-block on-chain supply and standard burn address balances.');
  const holders=copyFields(h,['holderCount','largestWalletPct','top10Pct','top20Pct'],'Explorer-reported holder count; concentration not asserted without complete rankings.');
  const liquidity=copyFields(m,['liquidityUsd','volume24h','dexPairCount','lpStatus'],'Exact-matched source-reported market data. LP permissions remain unverified.');
  const activity=copyFields(m,['priceUsd','valuation','change24h','volume24h'],'Primary base-token market values from exact Ethereum pairs; source-reported.');
- const mechanics=mechanicsCard(c);
+ const mechanics=mechanicsCard(c,sec);
  const cards={supply,holders,liquidity,activity,mechanics};
  for(const d of schema){
    if(!cards[d.id])throw Error('Missing required card '+d.id);

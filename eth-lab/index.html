@@ -51,6 +51,10 @@ footer{font-size:12px;color:#7f99a8;margin-top:32px}
 .reason{font-weight:400;font-size:11px;color:#adc1d0;margin-top:4px;line-height:1.35}
 .metric .result{max-width:60%;text-align:right;min-width:0}
 .metric .result b{display:block;max-width:none}
+.missingGroup{margin:10px 0 0;padding:8px 11px;border:1px solid #284352;border-radius:8px;background:#0a1927}
+.missingGroup summary{cursor:pointer;font-size:12px;color:#d4b58a}
+.missingGroup .metric{font-size:12px}
+.card .noSource{font-size:12px;color:#b1c8d8;padding:10px 0}
 .card .statusLine{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .proofTag{display:block;font-size:12px;font-weight:700;color:#7af3c2;margin-top:8px}
 .candidate .candidate-badge{display:inline-block;border-radius:6px;border:1px solid #408e7a;background:#163b32;color:#8ef6c9;padding:4px 8px;font-size:11px;font-weight:800;margin-top:6px}
@@ -160,6 +164,8 @@ function render(report){
     description.className='description';
     description.textContent=card?.description||'Awaiting verified evidence';
     section.append(description);
+    const missingRows=[];
+    let knownCount=0;
     for(const [key,label] of spec.fields){
       const data=card?.fields?.[key];
       const row=document.createElement('div');
@@ -179,7 +185,20 @@ function render(report){
        result.append(why);
       }
       row.append(name,result);
-      section.append(row);
+      if(report&&missing)missingRows.push(row);
+      else{section.append(row);if(report)knownCount++}
+    }
+    if(report&&knownCount===0){
+      const notice=document.createElement('p');notice.className='noSource';
+      notice.textContent='No source-backed values available for this token.';
+      section.append(notice);
+    }
+    if(report&&missingRows.length){
+      const hidden=document.createElement('details');hidden.className='missingGroup';
+      const toggle=document.createElement('summary');
+      toggle.textContent='Show '+missingRows.length+' unverified checks and reasons';
+      hidden.append(toggle,...missingRows);
+      section.append(hidden);
     }
     const status=document.createElement('div');
     status.className='meta statusLine';

@@ -171,7 +171,7 @@ function showCandidates(data){
   const title=document.createElement('span');title.className='candidate-title';
   title.textContent=(item.name||'Unnamed token')+' ('+(item.symbol||'?')+')';
   const meta=document.createElement('span');meta.className='candidate-meta';
-  meta.textContent='Ethereum · '+item.address+' · Source: DexScreener · Identity NOT VERIFIED';
+  meta.textContent='Ethereum · '+item.address+' · Source: '+(item.source||'Discovery provider')+' · Identity NOT VERIFIED';
   info.append(title,meta);
   const choose=document.createElement('span');choose.textContent='SCAN →';
   option.append(info,choose);

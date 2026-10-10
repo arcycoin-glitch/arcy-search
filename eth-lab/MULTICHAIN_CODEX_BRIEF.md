@@ -42,3 +42,20 @@ These are **NOT yet wired into report, UI, or network endpoint**. They are not e
 The existing test project's preview auto-deploy setting was changed to \`previewDeploymentsDisabled: true\` during preparation to avoid excess deploys. Recheck actual Vercel settings, quota and permissions before enabling previews or making a single manual preview deployment. Do not set up extra test Vercel projects, and do not suggest paying for Pro solely to unblock today's work.
 
 **Non-goal:** No actual token purchases, minting, swaps, transfers, custom token issuance, wallet connection, or write methods. No duplicate provider claims or simulated data.
+
+## Approved architecture — shared data engine, Stock Tokens recognized in phase A
+Decision (2026-10-11): Build one general token-analysis engine for Ethereum and Robinhood Chain first. **Include Robinhood Stock Tokens under the same token-search / 5-card experience when matched to the official registry.** Defer advanced stock-specific analytics (dividend timelines, split-adjusted charts, market-hours prices, Chainlink feed precision and corporate-action economics) to a separately reviewed second phase. Do not delay working ERC-20 analysis on those features.
+
+### Shared data engine contract
+- Existing Ethereum reader must remain working. One chain-scoped orchestrator calls independent adapters for pinned-block RPC, holder data, market data, circulating supply, security and official Robinhood asset identity, preserving the same five cards / 20 fields.
+- New opt-in scaffold at eth-lab/lib/data-engine.js provides createEngine(adapters), report({network,address}) and discover({network,query}). It requires an exact network and contract match, checks provenance and rejects wrong-chain fields. No unverified field becomes zero. Tests at eth-lab/test/data-engine.test.js.
+- The scaffold **is not connected to UI or existing APIs yet**. Codex must integrate it (or a compatible fully tested orchestration replacement) and ensure source requests truly run for both chains.
+- Existing eth-lab/lib/evidence.js currently hardcodes Ethereum chain identity for found fields. Refactor carefully so Robinhood evidence reports chain 4663 and Ethereum remains chain 1. Do not let a Robinhood report reuse Ethereum market/holder/security data.
+- Token name or ticker search results are unverified candidates, not official identities. Only exact contract+chain matching the official Robinhood Stock Token registry may be labeled registry-matched.
+- Show the Stock Token official-registry match and shares-per-token multiplier as metadata. Never equate Robinhood's raw underlying-equity bid/ask with onchain Stock Token USD price, and never claim Stock Tokens are shares in the underlying company.
+- The shared layer is an **orchestrator, not a single external API**. Each source is independently chain- and address-validated. Keep field-level NOT VERIFIED on unavailable, inconsistent, unsupported or stale data.
+- Continue in GitHub multichain-lab only. No new Vercel project; use only existing protected arcy-ethereum-test after one manual preview deployment when ready. Production is a separately approved later step.
+
+### Milestones
+Phase A: Ethereum and Robinhood Chain ordinary ERC-20 token reports and name/address discovery both work in one responsive five-card app; verified canonical Robinhood Stock Token identity recognized from official registry; correct chain-specific evidence. Security / live provider / browser tests pass before shared preview.
+Phase B (later): advanced Robinhood Stock Token corporate actions, multipliers, onchain feeds, dividend and underlier analytics. Do not represent Phase B as already implemented.

@@ -62,11 +62,40 @@ test('discovery adapter supports source-reported results and 429 upstream failur
   global.fetch=async()=>new Response(JSON.stringify({pairs:[pair(uni,other)]}),{status:200,headers:{'content-type':'application/json'}});
   const found=await discover('Uniswap');assert.equal(found.length,1);
   global.fetch=async()=>new Response('Rate limited',{status:429});
-  await assert.rejects(discover('UNI'),/HTTP 429/);
+  await assert.rejects(discover('UNI'),/All discovery providers unavailable/);
  }finally{global.fetch=original}
 });
 test('name discovery response is bounded to at most twelve candidates',()=>{
  const many=Array.from({length:50},(_,i)=>pair({name:'Example Token '+i,symbol:'EXAMPLE',address:'0x'+(i+1).toString(16).padStart(40,'0')},other));
  const r=parse(many,'EXAMPLE');
  assert.equal(r.length,12);
+});
+
+test('CoinGecko fallback returns only an Ethereum contract from exact coin detail identity',async()=>{
+ const original=global.fetch;
+ const q='Uniswap',coin={id:'uniswap',name:'Uniswap',symbol:'UNI'};
+ try{
+  global.fetch=async url=>{
+   if(String(url).includes('/api/v3/search?'))return new Response(JSON.stringify({coins:[coin,{id:'fake-bridge',name:'Uniswap Bridge',symbol:'UNI'}]}));
+   if(String(url).includes('/coins/uniswap?'))return new Response(JSON.stringify({id:'uniswap',platforms:{ethereum:ETH}}));
+   if(String(url).includes('/coins/fake-bridge?'))return new Response(JSON.stringify({id:'other-coin',platforms:{ethereum:ALT}}));
+   return new Response(JSON.stringify({pairs:[]}));
+  };
+  const r=await discover(q);
+  assert.equal(r.length,1);
+  assert.equal(r[0].address,ETH);
+  assert.equal(r[0].source,'CoinGecko');
+  assert.equal(r[0].identityVerified,false);
+ }finally{global.fetch=original}
+});
+test('CoinGecko never accepts a coin that lacks an exact Ethereum contract',async()=>{
+ const original=global.fetch;
+ try{
+  global.fetch=async url=>{
+   if(String(url).includes('/api/v3/search?'))return new Response(JSON.stringify({coins:[{id:'bridged-uni',name:'Uniswap',symbol:'UNI'}]}));
+   if(String(url).includes('/coins/bridged-uni?'))return new Response(JSON.stringify({id:'bridged-uni',platforms:{base:ALT,ethereum:null}}));
+   return new Response(JSON.stringify({pairs:[]}));
+  };
+  assert.deepEqual(await discover('Uniswap'),[]);
+ }finally{global.fetch=original}
 });

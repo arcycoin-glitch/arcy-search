@@ -28,7 +28,15 @@ async function report({network='ethereum',address}){
 }
 async function token({network='ethereum',address}){
  if(network==='ethereum')return ethereumToken.inspect(address);
- return robinhood.inspectToken({address});
+ const t=await robinhood.inspectToken({address});
+ const supply=await robinhood.supply(t);
+ return {ok:true,chainId:t.chainId,network:t.network,address:t.address,block:t.block,
+  scannedAt:new Date().toISOString(),token:t.token,
+  totalSupplyRaw:t.totalSupplyRaw,burnAddressRaw:t.burnAddressRaw,
+  fields:{totalSupply:supply.fields.totalSupply,
+   circulatingSupply:supply.fields.circulatingSupply,
+   burnAddressBalance:supply.fields.burnAddressBalance,
+   burnAddressPct:supply.fields.burnAddressPct}};
 }
 async function discover({network='ethereum',query}){
  const cache=network==='ethereum'?ethCache:rhCache;

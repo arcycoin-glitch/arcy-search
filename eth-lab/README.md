@@ -1,50 +1,52 @@
-# ARCY SEARCH — Ethereum Test Architecture
+# ARCY SEARCH — Ethereum Lab (Five-Card Architecture)
 
-**Status:** architecture prototype; not yet live-verified or production-ready.
+**Status:** isolated implementation skeleton, not yet end-to-end audited or production-ready.
 
-- GitHub repository: `arcycoin-glitch/arcy-search`
-- Isolated branch: `eth-lab`, app root `eth-lab/`
-- Production repository `arcycoin-glitch/arcy-website` and its deployment were **not edited**.
-- No wallet connection, secrets, token swaps, private keys, blockchain writes, or fund transfers.
+Production reference: `arcycoin-glitch/arcy-website`, main branch, `ui-model.js`.
+Experiment: `arcycoin-glitch/arcy-search`, branch `eth-lab`, root directory `eth-lab/`.
+The production GitHub repository and production Vercel deployment have **not** been changed.
 
-## Local startup
+## Five original production cards — exactly 4 metrics each
+1. Unlock & Supply: Total Supply, Circulating Supply, Burn Address Balance, Next Unlock.
+2. Holder & Whale: Holder Count, Largest Wallet %, Top 10 Concentration, Top 20 Concentration.
+3. Liquidity & Exit: Liquidity USD, 24H Volume, DEX / Pair Count, LP Status.
+4. Market Activity: Price, Market Cap / FDV, 24H Change, 24H Volume.
+5. Contract & Mechanics: Trading Taxes, Mint Capability, Owner / Admin, Contract Architecture.
+
+No separate Contract Control or Claim vs Reality card. Contract authority evidence remains nested under Contract & Mechanics.
+
+## Run locally (Node 22+)
 ```sh
 cd eth-lab
 npm test
 npm run dev
 ```
-Open http://127.0.0.1:3001. Node.js 22+ required.
+Open `http://127.0.0.1:3001`.
 
-## APIs
-- `GET /api/token?address=0x...`: pinned-block ERC-20 RPC metadata, supply, standard burn-address balances.
-- `GET /api/report?address=0x...`: six distinct ARCY SEARCH evidence cards in a single scan.
+## Isolated staging deployment
+Create a **new** Vercel project using `arcycoin-glitch/arcy-search`, Git branch `eth-lab`, Root Directory `eth-lab` and Node 22+. Never repoint the production site or reuse the production Vercel project. A preview deploy is not automatically created by these commits.
 
-## Data architecture
-- `lib/eth.js`: Ethereum mainnet chain-ID check; pinned block; read-only ERC-20 calls. Default public RPC can be overridden with server-only `ETH_RPC_URL`.
-- `lib/evidence.js`: mandatory source/evidence and null-with-reason verification states.
-- `lib/market.js`: DexScreener exact contract/chain pair filtering, source-reported price/liquidity/volume, LP locks unverified.
-- `lib/control.js`: owner()/paused() getter reads and EIP-1967 implementation storage; these do **not** establish every contract authority.
-- `lib/report.js`: stable six-card shape and missing-data policy.
-- `lib/config.js`: preliminary chain configuration; Arc production currently stays independent.
+Server-side optional `ETH_RPC_URL` must be an Ethereum Mainnet RPC (chain ID 1). Do not expose paid RPC credentials in browser source or public commits. Default public RPC is for experimentation only.
 
-## Explicitly not implemented
-- Full holder indexing, concentration snapshots or whale balances.
-- Cross-source verified circulating supply and unlock calendars.
-- Exhaustive liquidity / LP custody and unlock proof.
-- Source-linked project claim auditing.
-- Verified bytecode/permission-aware fee, blacklist, mint and buyback interpretation.
-- Integrating with production Arc or deploying a live preview.
+## API
+- `GET /api/token?address=0x...`: on-chain ERC-20 supply/metadata and current standard burn address balances at one pinned Ethereum block.
+- `GET /api/report?address=0x...`: five-card analysis with field-level verification state and source evidence.
 
-## Acceptance criteria for Codex audit
-1. Run `npm test` and document exit codes.
-2. Test live Ethereum chain ID 1 and stable block snapshots for USDC, UNI and LINK with explorer cross-checks, including token decimals and burn addresses.
-3. Test rate limits, RPC downtime, malformed JSON, reverted ERC-20 getters, wrong chain ID, invalid contract, EOA addresses and tokens lacking optional getters.
-4. Check DexScreener no-pairs, duplicate pairs, irrelevant chains, duplicate token symbols, missing liquidity/volume and stale market data; never infer zero data.
-5. Test complete interface on mobile/desktop and detect horizontal overflow or broken View Evidence.
-6. Review XSS, SSRF, endpoint input validation, rate limiting and error information exposure.
-7. Evaluate all unknown / NOT_VERIFIED output semantics; do not market unverified metrics as authoritative.
-8. Build holders, unlock, permissions, mechanics and LP adapters only when each has a source and contract-matched evidence; do not invent values.
-9. Run a production regression suite against `arcy-website` before proposing any merge, including all current Arc endpoints and holder job behavior.
-10. Deploy separate Vercel preview (branch `eth-lab`, root `eth-lab`) only; never overwrite existing ARCY production settings. Preserve all six cards and existing data semantics.
+## Sources and limitations
+- Ethereum RPC: pinned-block on-chain ERC-20 metrics, selected contract getters and EIP-1967 implementation slot (not a complete admin/ownership review).
+- DexScreener: exact Ethereum contract-matched pairs and source-reported liquidity, 24H volume, base-token primary-pool price, market-cap/FDV label, 24H change. DexScreener is a provider report, **not** on-chain evidence. Price and valuation are not inferred from a pool where the requested token is the quote asset.
+- Holder indexing, verified circulating supply, token unlock schedules, LP locks, mint authority, upgrade permissions and contract-specific trading taxes require further reliable source adapters. Their output must remain **NOT VERIFIED**, not zero or false.
+- `schema.js` is shared by report validation, front-end rendering and unit tests; five cards and twenty metrics are mandatory.
 
-**Promotion gate:** no production integration until automated tests, explorer spot checks and browser tests pass. Any incomplete field must remain NOT_VERIFIED.
+## Codex final audit checklist
+1. Run all Node tests and inspect failures; check five cards and precisely twenty field keys.
+2. Test live USDC / UNI / LINK, correct chain ID, pinned block reads, amount precision and explorer reconciliation.
+3. Cover wrong RPC network, invalid address, EOA, missing optional token getters, reverted getters, provider timeouts, HTTP errors, malformed JSON and rate limits.
+4. Audit market pair matching, duplicates, quote-token errors, absent pools, stale data, liquidity sums, primary pool switching, FDV vs market cap and missing data.
+5. Inspect contract security: proxy variants, owner roles, paused/mint/blacklist logic, bytecode/source identity, taxes and LP ownership (never assume undetected means absent).
+6. Validate holder snapshot completeness and address/supply reconciliation before showing any whale concentration; verify contract matched unlock schedule source.
+7. Check desktop/mobile browser rendering, source details, input validation, no XSS, safe response sizes and no accidental private key use.
+8. Cross-check against current `arcy-website/main`; preserve all Arc endpoint responses and the production holder background job.
+9. Check separate Vercel staging environment and only propose production merge after all acceptance criteria pass.
+
+**Promotion gate:** this lab must never be merged to ARCY production solely because its UI renders. Final contract-level checks and Codex QA are required. No wallet connection, token deployment, swap, private keys or fund transfers.

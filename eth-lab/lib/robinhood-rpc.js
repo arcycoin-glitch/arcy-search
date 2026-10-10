@@ -23,17 +23,24 @@ function retryable(error){
 }
 async function requestAt(endpoint,method,params,{timeoutMs=11000}={}){
  const id=++nextId;
- const response=await fetch(endpoint,{
-  method:'POST',headers:{'content-type':'application/json'},
-  body:JSON.stringify({jsonrpc:'2.0',id,method,params}),
-  signal:AbortSignal.timeout(timeoutMs)
- });
- if(!response.ok){
-  const error=new Error('Robinhood RPC HTTP '+response.status);
-  error.retryable=response.status===403||response.status===429||response.status>=500;
-  throw error;
- }
- const body=await readJson(response,1024*1024);
+ // A ref-counted watchdog is essential: AbortSignal.timeout() is unref'd
+ // in Node and a stalled mocked/provider promise could otherwise exit silently.
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(new DOMException('RPC request timed out','TimeoutError')),timeoutMs);
+ let body;
+ try{
+  const response=await fetch(endpoint,{
+   method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({jsonrpc:'2.0',id,method,params}),
+   signal:controller.signal
+  });
+  if(!response.ok){
+   const error=new Error('Robinhood RPC HTTP '+response.status);
+   error.retryable=response.status===403||response.status===429||response.status>=500;
+   throw error;
+  }
+  body=await readJson(response,1024*1024);
+ }finally{clearTimeout(timer)}
  if(!body||typeof body!=='object'||Array.isArray(body)||body.jsonrpc!=='2.0'||
   body.id!==id||body.error||!Object.hasOwn(body,'result'))
   throw Error('Robinhood RPC invalid response');

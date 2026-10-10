@@ -59,3 +59,17 @@ Decision (2026-10-11): Build one general token-analysis engine for Ethereum and 
 ### Milestones
 Phase A: Ethereum and Robinhood Chain ordinary ERC-20 token reports and name/address discovery both work in one responsive five-card app; verified canonical Robinhood Stock Token identity recognized from official registry; correct chain-specific evidence. Security / live provider / browser tests pass before shared preview.
 Phase B (later): advanced Robinhood Stock Token corporate actions, multipliers, onchain feeds, dividend and underlier analytics. Do not represent Phase B as already implemented.
+
+## Updated implementation checkpoint — 2026-10-11 (supersedes earlier scaffold-only statements)
+The shared engine is NOW wired to the existing application on the multichain-lab branch:
+- Frontend network selector, explicit chain-qualified contract scan and candidate discovery.
+- Chain-qualified GET endpoints /api/report, /api/token, /api/discover.
+- Ethereum legacy readers wrapped by the common engine with identical 5-card schema.
+- Robinhood RPC, market, holder (source-reported only), read-only control introspection, and official Stock Token registry.
+- All values are source/chain checked; offline and network/browser regressions passed.
+- Reproducible Robinhood acceptance: npm run smoke:robinhood.
+- Current detailed results and blockers: see eth-lab/MULTICHAIN_AUDIT.md.
+- Latest tests: 106/106 Node; ETH mainnet 9/9; Robinhood mainnet 5/5; browser 4/4 responsive viewports.
+- No production deployment, no extra Vercel project, no new paid API. Existing test project auto-preview deployments are deliberately disabled.
+
+**Still mandatory before releasing beyond protected preview:** Independent Codex source/security review; Vercel global WAF/shared rate limiting; reliable source for Robinhood holder count (public Blockscout returns 403 in testing); provider resilience; documented limits on liquidity, tax, LP lock and stock-equity values. Do not mistake a functioning local dual-chain app for full verification of all 20 metrics or public-launch readiness.

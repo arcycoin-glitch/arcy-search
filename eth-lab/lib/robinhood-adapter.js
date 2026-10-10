@@ -35,7 +35,7 @@ async function supply(base){
  const proof={address:base.address,block:base.block,source:'Robinhood RPC',method:'ERC-20 pinned-block call'};
  const raw=BigInt(base.totalSupplyRaw);
  const share=base.burnAddressRaw===null||raw<=0n||BigInt(base.burnAddressRaw)>raw?null:
-  Number((BigInt(base.burnAddressRaw)*1000000n+raw/2n)/raw)/10000;
+  Number((BigInt(base.burnAddressRaw)*100n*100000000000000n+raw/2n)/raw)/100000000000000;
  return {description:'Pinned Robinhood mainnet ERC-20 total supply and current zero/dead holdings.',
  fields:{
   totalSupply:evidence(base.totalSupply,'Robinhood RPC',{...proof,method:'totalSupply()'},'ON_CHAIN'),

@@ -33,7 +33,23 @@ test('unproven top holders never return verified percentages',()=>{
  const addresses=Array.from({length:20},(_,i)=>'0x'+(i+1).toString(16).padStart(40,'0'));
  const balances=addresses.map(()=>1n);
  const x=calculate(addresses,balances,100n,30,'0x10',token);
- assert.equal(x.fields.holderCount.value,30);
+ assert.equal(x.fields.holderCount.value,null);
  assert.equal(x.fields.top10Pct.value,null);
+ assert.equal(x.fields.top20Pct.value,null);
+});
+
+test('full holder set matching pinned on-chain supply produces concentration',()=>{
+ const addresses=Array.from({length:20},(_,i)=>'0x'+(i+1).toString(16).padStart(40,'0'));
+ const balances=addresses.map(()=>5n);
+ const x=calculate(addresses,balances,100n,20,'0x10',token);
+ assert.equal(x.fields.holderCount.value,20);
+ assert.equal(x.fields.largestWalletPct.value,5);
+ assert.equal(x.fields.top10Pct.value,50);
+ assert.equal(x.fields.top20Pct.value,100);
+});
+test('incomplete holder supply invalidates every concentration percentage',()=>{
+ const addresses=Array.from({length:20},(_,i)=>'0x'+(i+1).toString(16).padStart(40,'0'));
+ const x=calculate(addresses,addresses.map(()=>4n),100n,20,'0x10',token);
+ assert.equal(x.fields.largestWalletPct.value,null);
  assert.equal(x.fields.top20Pct.value,null);
 });

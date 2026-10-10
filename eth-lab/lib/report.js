@@ -18,8 +18,9 @@ function burnAddressPercent(totalRaw,burnRaw,block,address){
  return evidence.unknown('Standard burn-address share cannot be reconciled.','BURN_SHARE_NOT_VERIFIED');
  const supply=BigInt(totalRaw),burn=BigInt(burnRaw);
  if(supply<=0n||burn>supply)return evidence.unknown('Standard burn-address share cannot be reconciled.','BURN_SHARE_NOT_VERIFIED');
- const scaled=(burn*1000000n+supply/2n)/supply;
- return evidence.found(Number(scaled)/10000,'Ethereum RPC',[{chainId:1,block,address,method:'balanceOf(0x0 and 0xdead) / totalSupply()',scope:'Current balances only, not historic burned total.'}],'ON_CHAIN_DERIVED');
+ const precision=10n**80n;
+ const scaled=(burn*100n*precision+supply/2n)/supply;
+ return evidence.found(Number(scaled)/1e80,'Ethereum RPC',[{chainId:1,block,address,method:'balanceOf(0x0 and 0xdead) / totalSupply()',scope:'Current balances only, not historic burned total.'}],'ON_CHAIN_DERIVED');
 }
 function mechanicsCard(controls,securityData={}){
  const owner=controls.fields?.owner;

@@ -168,7 +168,7 @@ function baseUrl(route,params){
 async function scanAddress(address,network=selected(),version=searchVersion){
  const info=NETWORKS[network],button=$('go');
  if(!info)return;
- button.disabled=true;clearMatches();
+ button.disabled=true;clearMatches();$('asset').replaceChildren();render(null);
  $('state').textContent='Reading '+info.label+' on-chain and external evidence…';
  const controller=requestController();
  try{
@@ -261,7 +261,7 @@ async function searchOrScan(){
 $('chain').addEventListener('change',chainChanged);
 $('go').addEventListener('click',searchOrScan);
 $('address').addEventListener('keydown',event=>{if(event.key==='Enter')void searchOrScan()});
-$('address').addEventListener('input',()=>{cancelPending();clearMatches()});
+$('address').addEventListener('input',()=>{cancelPending();clearMatches();$('asset').replaceChildren();render(null)});
 
 </script>
 </body>

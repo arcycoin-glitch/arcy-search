@@ -114,3 +114,8 @@ test('burn share uses integer raw balances for large supplies',()=>{
  assert.equal(burnAddressPercent(supply,burn,'0x1',token).value,25);
  assert.equal(burnAddressPercent(supply,(BigInt(supply)+1n).toString(),'0x1',token).value,null);
 });
+test('tiny positive burn share never rounds to a verified zero',()=>{
+ const result=burnAddressPercent('1'+'0'.repeat(77),'1','0x1',token);
+ assert.equal(result.dataState,'DATA_FOUND');
+ assert.ok(result.value>0);
+});

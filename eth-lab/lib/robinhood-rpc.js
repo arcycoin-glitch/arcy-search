@@ -11,7 +11,7 @@ async function rpc(method,params,{timeoutMs=11000}={}){
   body:JSON.stringify({jsonrpc:'2.0',id,method,params}),
   signal:AbortSignal.timeout(timeoutMs)
  });
- if(!response.ok)throw Error('Robinhood RPC unavailable');
+ if(!response.ok)throw Error('Robinhood RPC HTTP '+response.status);
  const body=await readJson(response,1024*1024);
  if(!body||typeof body!=='object'||body.jsonrpc!=='2.0'||body.id!==id||body.error||!Object.hasOwn(body,'result'))
   throw Error('Robinhood RPC invalid response');

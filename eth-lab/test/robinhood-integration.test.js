@@ -3,6 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const rpc=require('../lib/robinhood-rpc');
 const market=require('../lib/robinhood-market');
 const adapter=require('../lib/robinhood-adapter');
+const assets=require('../lib/robinhood-assets');
 const reportApi=require('../api/report'),tokenApi=require('../api/token'),discoveryApi=require('../api/discover');
 const A='0x1cdad396db64bda184d5182a97dd9b3c62100b7d';
 const B='0xabcdefabcdefabcdefabcdefabcdefabcdefabcd';
@@ -40,6 +41,42 @@ test('Robinhood price never uses Ethereum pools, unrelated contracts or quote-si
  assert.equal(match.valuation.kind,'MARKET_CAP');
  assert.equal(market.parse([{...pair,chainId:'ethereum'}],A).priceUsd.value,null);
  assert.equal(market.parse([{...pair,baseToken:{address:B},quoteToken:{address:A}}],A).priceUsd.value,null);
+});
+test('Robinhood liquidity and activity share one in-flight market request',async()=>{
+ const original=global.fetch,A='0x'+'a'.repeat(40);let calls=0;
+ try{
+  global.fetch=async url=>{calls++;assert.match(String(url),/api\.dexscreener\.com\/latest\/dex\/tokens/);return new Response(JSON.stringify({pairs:[]}))};
+  await Promise.all([
+   adapter.inspectCard({address:A,cardId:'liquidity'}),
+   adapter.inspectCard({address:A,cardId:'activity'})
+  ]);
+  assert.equal(calls,1);
+ }finally{global.fetch=original}
+});
+test('same-symbol contract clone cannot match the official Stock Token registry',()=>{
+ const registry={assets:[{tokenSymbol:'APLD',tokenName:'Applied Digital • Robinhood Token',
+  deployments:[{chainId:4663,contractAddress:A}]}]};
+ const clone='0x'+'c'.repeat(40);
+ assert.equal(assets.byContract(registry,clone),null);
+});
+test('Robinhood RPC 429 and malformed JSON fail closed without response-body leakage',async()=>{
+ const original=global.fetch;
+ try{
+  global.fetch=async()=>new Response('sensitive-provider-error',{status:429});
+  await assert.rejects(rpc.rpc('eth_blockNumber',[]),e=>e.message==='Robinhood RPC HTTP 429'&&!e.message.includes('sensitive-provider-error'));
+  global.fetch=async()=>new Response('{bad json',{status:200});
+  await assert.rejects(rpc.rpc('eth_blockNumber',[]),/malformed JSON/);
+ }finally{global.fetch=original}
+});
+test('Robinhood RPC timeout aborts a pending provider request',async()=>{
+ const original=global.fetch;
+ try{
+  global.fetch=async(_url,{signal})=>new Promise((_,reject)=>{
+   if(signal.aborted)return reject(new DOMException('Aborted','AbortError'));
+   signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError')),{once:true});
+  });
+  await assert.rejects(rpc.rpc('eth_blockNumber',[],{timeoutMs:5}),e=>e.name==='AbortError'||e.name==='TimeoutError');
+ }finally{global.fetch=original}
 });
 test('Robinhood pinned-block RPC rejects wrong-chain endpoint before totalSupply call',async()=>{
  const original=global.fetch;const methods=[];
@@ -98,6 +135,10 @@ test('Robinhood tiny positive burn ratio remains positive, not rounded to zero',
  assert.ok(fields.burnAddressPct.value>0);
  assert.equal(fields.burnAddressPct.network,'robinhood');
  assert.equal(fields.circulatingSupply.value,null);
+ const extreme=(await adapter.supply({address:A,block:'0x123',totalSupply:'1',
+  totalSupplyRaw:'1'+'0'.repeat(77),burnAddressRaw:'1',burnAddressBalance:'0'})).fields.burnAddressPct;
+ assert.equal(extreme.dataState,'DATA_FOUND');
+ assert.ok(extreme.value>0);
 });
 
 test('Robinhood official Stock Token discovery survives chain-label normalization',async()=>{

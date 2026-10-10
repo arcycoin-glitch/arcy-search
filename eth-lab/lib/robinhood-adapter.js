@@ -14,6 +14,16 @@ function evidence(value,source,proof,status='SOURCE_REPORTED'){
   source,evidence:[{chainId:cfg.chainId,network:cfg.id,...proof}]};
 }
 let assetsCache=null,assetsPromise=null;
+const marketInflight=new Map();
+function inspectMarket(address){
+ const existing=marketInflight.get(address);
+ if(existing)return existing;
+ const request=market.inspect(address);
+ marketInflight.set(address,request);
+ const clear=()=>{if(marketInflight.get(address)===request)marketInflight.delete(address)};
+ request.then(clear,clear);
+ return request;
+}
 async function officialAssets(){
  if(assetsCache&&Date.now()-assetsCache.at<600000)return assetsCache.body;
  if(assetsPromise)return assetsPromise;
@@ -34,8 +44,9 @@ async function inspectStock({address}){
 async function supply(base){
  const proof={address:base.address,block:base.block,source:'Robinhood RPC',method:'ERC-20 pinned-block call'};
  const raw=BigInt(base.totalSupplyRaw);
+ const precision=10n**80n;
  const share=base.burnAddressRaw===null||raw<=0n||BigInt(base.burnAddressRaw)>raw?null:
-  Number((BigInt(base.burnAddressRaw)*100n*100000000000000n+raw/2n)/raw)/100000000000000;
+  Number((BigInt(base.burnAddressRaw)*100n*precision+raw/2n)/raw)/1e80;
  return {description:'Pinned Robinhood mainnet ERC-20 total supply and current zero/dead holdings.',
  fields:{
   totalSupply:evidence(base.totalSupply,'Robinhood RPC',{...proof,method:'totalSupply()'},'ON_CHAIN'),
@@ -68,7 +79,7 @@ async function holder({address}){
  return {description:'Explorer-reported count only. Whale metrics are NOT VERIFIED without full balances.',fields};
 }
 async function activity({address},cardId){
- const fields=await market.inspect(address);
+ const fields=await inspectMarket(address);
  const keys=cardId==='liquidity'?['liquidityUsd','volume24h','dexPairCount','lpStatus']:
   ['priceUsd','valuation','change24h','volume24h'];
  return {description:'Source-reported exact Robinhood DEX pairs only; unlisted pools are excluded.',
@@ -140,4 +151,4 @@ async function discover({query}){
  const seen=new Set();
  return candidates.filter(x=>{if(seen.has(x.address))return false;seen.add(x.address);return true}).slice(0,12);
 }
-module.exports={inspectToken,inspectCard,inspectStock,discover,officialAssets,supply,holder,mechanics,addressOf};
+module.exports={inspectToken,inspectCard,inspectStock,discover,officialAssets,supply,holder,mechanics,addressOf,inspectMarket};

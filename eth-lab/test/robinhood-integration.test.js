@@ -99,3 +99,25 @@ test('Robinhood tiny positive burn ratio remains positive, not rounded to zero',
  assert.equal(fields.burnAddressPct.network,'robinhood');
  assert.equal(fields.circulatingSupply.value,null);
 });
+
+test('Robinhood official Stock Token discovery survives chain-label normalization',async()=>{
+ const original=global.fetch;
+ const asset={assets:[{tokenSymbol:'APLD',tokenName:'Applied Digital • Robinhood Token',
+  deployments:[{chainId:4663,contractAddress:B}],currentMultiplier:'1.000000000000000000',
+  status:'ASSET_STATUS_ACTIVE'}]};
+ try{
+  global.fetch=async url=>{
+   if(String(url)==='https://api.robinhood.com/rhj/assets')return new Response(JSON.stringify(asset),{status:200});
+   if(String(url).includes('/dex/search/'))return new Response(JSON.stringify({pairs:[]}),{status:200});
+   throw Error('Unexpected source');
+  };
+  const x=await adapter.discover({query:'APLD'});
+  assert.equal(x.length,1);
+  assert.equal(x[0].network,'robinhood');
+  assert.equal(x[0].chainId,4663);
+  assert.equal(x[0].registryMatched,true);
+  const y=await require('../lib/multichain-service').engine.discover({network:'robinhood',query:'APLD'});
+  assert.equal(y.candidates[0].registryMatched,true);
+  assert.equal(y.candidates[0].address,B);
+ }finally{global.fetch=original}
+});

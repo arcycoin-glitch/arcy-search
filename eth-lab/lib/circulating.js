@@ -9,12 +9,12 @@ function parse(body,address,onchainSupply){
  const no=(message,code)=>unknown(message,code);
  if(!body||typeof body!=='object'||Array.isArray(body))return no('CoinGecko returned invalid data.','MALFORMED_SOURCE_DATA');
  const contract=same(body.contract_address,address)||same(body.detail_platforms?.ethereum?.contract_address,address);
- const chain=body.asset_platform_id==='ethereum'||body.detail_platforms?.ethereum?.contract_address;
+ const chain=body.asset_platform_id==='ethereum'||same(body.detail_platforms?.ethereum?.contract_address,address);
  if(!contract||!chain)return no('CoinGecko response does not confirm this Ethereum contract address.','CONTRACT_IDENTITY_MISMATCH');
  const value=body.market_data?.circulating_supply;
  if(typeof value!=='number'||!Number.isFinite(value)||value<=0)return no('CoinGecko did not report a positive circulating supply.','CIRCULATING_SUPPLY_UNAVAILABLE');
  const supply=Number(onchainSupply);
- if(!Number.isFinite(supply)||supply<=0||value>supply*1.001)return no('Circulating supply exceeds or cannot be reconciled with the pinned on-chain total supply.','SUPPLY_RECONCILIATION_FAILED');
+ if(!Number.isFinite(supply)||supply<=0||value>supply)return no('Circulating supply exceeds or cannot be reconciled with the pinned on-chain total supply.','SUPPLY_RECONCILIATION_FAILED');
  return found(value,'CoinGecko',[{
    provider:'CoinGecko',assetPlatform:'ethereum',contractAddress:address,
    coinId:typeof body.id==='string'?body.id:null,
@@ -35,7 +35,7 @@ async function inspect(address,onchainSupply){
   const body=await response.json();
   const result=parse(body,key,onchainSupply);
   // Cache only parsed and validated identity responses; do not cache provider errors.
-  if(result.reasonCode!=='MALFORMED_SOURCE_DATA'&&result.reasonCode!=='CONTRACT_IDENTITY_MISMATCH')cache.set(key,{body,at:Date.now()});
+  if(result.dataState==='DATA_FOUND')cache.set(key,{body,at:Date.now()});
   return result;
  }catch(e){return error(e,'CoinGecko')}
 }

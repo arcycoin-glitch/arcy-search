@@ -56,3 +56,15 @@ test('source-backed Ethereum candidate wins and retains official issuer hyperlin
   assert.equal(result.matches[1].identity.status,'NOT_VERIFIED');
  }finally{global.fetch=original}
 });
+
+test('Chainlink LINK and Tether USDT must match issuer-published Ethereum contracts only',()=>{
+ const LINK='0x514910771af9ca656af840dff83e8264ecf986ca';
+ const USDT='0xdac17f958d2ee523a2206206994597c13d831ec7';
+ assert.equal(verified('ethereum',LINK)?.issuer,'Chainlink');
+ assert.equal(verified('ethereum',USDT)?.issuer,'Tether');
+ assert.match(verified('ethereum',USDT).proofUrl,/tether\.to/);
+ assert.equal(knownMatches('ethereum','LINK')[0].address,LINK);
+ assert.equal(knownMatches('ethereum','USDT')[0].address,USDT);
+ assert.equal(verified('robinhood',USDT),null);
+ assert.equal(verified('ethereum',CLONE),null);
+});

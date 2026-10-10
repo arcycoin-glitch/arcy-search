@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const {unknown,found,card}=require('../lib/evidence');
 const {parse}=require('../lib/market');
 const {addrWord}=require('../lib/control');
-const {mechanicsCard,copyFields}=require('../lib/report');
+const {mechanicsCard,copyFields,burnAddressPercent}=require('../lib/report');
 const schema=require('../schema');
 const token='0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
 const pair={
@@ -88,4 +88,14 @@ test('market schema labels partial aggregates as tracked or returned, not Ethere
  assert.match(liquidity.find(([key])=>key==='volume24h')[1],/Tracked/);
  assert.match(liquidity.find(([key])=>key==='dexPairCount')[1],/Returned/);
  assert.match(activity.find(([key])=>key==='volume24h')[1],/Tracked/);
+});
+
+test('supply card has no unlock and retains four evidence fields',()=>{
+ const keys=schema.find(s=>s.id==='supply').fields.map(x=>x[0]);
+ assert.deepEqual(keys,['totalSupply','circulatingSupply','burnAddressBalance','burnAddressPct']);
+});
+test('burn share requires real RPC balances',()=>{
+ const x=burnAddressPercent({status:'ON_CHAIN',value:'1000'},{status:'ON_CHAIN',value:'25'},'0x1','0x'+'a'.repeat(40));
+ assert.equal(x.value,2.5);
+ assert.equal(burnAddressPercent({status:'ON_CHAIN',value:'1000'},{status:'NOT_VERIFIED',value:null},'0x1',token).value,null);
 });

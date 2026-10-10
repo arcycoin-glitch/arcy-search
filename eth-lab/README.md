@@ -74,3 +74,18 @@ The new `lib/large-holders.js` extends support beyond small (20–30) holder tok
 Passing fields are explicitly marked `SOURCE_REPORTED_RPC_RECONCILED` rather than `ONCHAIN_VERIFIED`. Explorer ranking may describe a different block, and the first 21 source records do not independently prove no higher-ranked wallet has been omitted. These values must never be advertised as a complete verified global holder snapshot. Explorer-reported holder counts are likewise not independent wallet enumeration.
 
 The module is isolated and must pass live USDC, UNI, LINK and intentionally mismatched-index tests before moving to production. Unit scenarios include 21 sorted candidates, duplicates, ordering defects, malformed responses and balance disagreements. API latency, public RPC throttling, and Blockscout item encoding still need live integration verification.
+
+## Final pre-Codex foundation checkpoint — 10 October 2026
+
+- Five production-matched cards and 20 fields continue to use shared `schema.js`; no sixth card should be created.
+- Holder candidates: limited 20–30 full-balance snapshots or source-ranked top-21 checks for large sets. Large ranked results are labeled `SOURCE_REPORTED_RPC_RECONCILED`, not absolute verification.
+- Circulating Supply: CoinGecko exact Ethereum contract matching, sanity-checked against pinned total supply, explicitly `SOURCE_REPORTED`.
+- Next Unlock: `lib/unlocks.js` consumes only reviewed contract-exact source schedules in `data/eth-unlocks.json`. The shipped schedule is intentionally empty; absent evidence remains NOT_VERIFIED. Do not invent unlocks.
+- Contract & Mechanics: `lib/security.js` parses contract-exact GoPlus reports for buy/sell/transfer tax and mintability. These fields remain `SOURCE_REPORTED` (never on-chain proven). Independent admin/implementation readings remain separately limited.
+- LP Status: NOT_VERIFIED until contract- and pool-specific LP ownership and lock evidence is integrated; displaying source-reported liquidity does not prove an LP lock.
+- API requests are GET-only, contract-address validated, no-store, and public error details are generic. Serverless rate limiting, caching strategy, and third-party provider quota management require final hardening.
+- The current architecture is intentionally **not production ready**. Live mainnet checks, browser regression, third-party API response fixtures, deployment isolation review, and Codex security review are required.
+
+### Mandatory Codex acceptance gate
+
+Run `npm test` under Node 22 in `eth-lab/`. Check USDC, UNI, LINK and invalid/non-contract addresses against live Ethereum chain ID 1, current RPC blocks, explorer evidence, and price-provider payloads. Inspect any SOURCE_REPORTED status independently. Confirm no secret-bearing RPC URL is sent to the browser. Confirm no private key, wallet connect, funds, token launches, swaps, or trading execution. Verify five cards and twenty fields exactly. Test mobile/desktop, data errors, provider 404/429/500, network delays, malformed JSON and RPC mismatches. Do not modify or redeploy production `arcy-website` until the full regression suite and independent sign-off pass.

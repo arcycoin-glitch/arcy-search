@@ -41,6 +41,14 @@ footer{font-size:12px;color:#7f99a8;margin-top:32px}
 .candidate-title{font-weight:700;font-size:13px;overflow-wrap:anywhere}.candidate-meta{display:block;margin-top:4px;color:#9eb6c4;font-size:11px;overflow-wrap:anywhere}
 .candidate-warning{font-size:11px;color:#e6c77a;margin:0 0 10px}
 @media(max-width:550px){.candidate{align-items:flex-start;flex-direction:column}}
+.identity{border:1px solid #28586d;border-left:3px solid #7899b0;background:#102535;border-radius:12px;margin:10px 0;padding:12px 14px;font-size:12px;color:#d6eaf7}
+.identity.verified{border-left-color:#55dab4;background:#0b2a32}
+.identity strong{display:block;font-size:13px;margin-bottom:4px}
+.identity a{color:#65e3ff;overflow-wrap:anywhere}
+.identity small{color:#a6c3d2;display:block;margin-top:4px}
+.buyers{color:#b9cfde;font-size:12px;margin:14px 0 18px}
+.candidate.official{border-color:#398e81;background:#10332f}
+.candidate.official .candidate-title{color:#8ff5d3}
 .network{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;color:#9ec1d2;font-size:12px}
 .network label{letter-spacing:.08em;font-weight:700}
 .network select{background:#0c2535;border:1px solid #26708a;border-radius:10px;color:#e8f8ff;padding:12px 14px;min-width:235px;cursor:pointer}
@@ -66,6 +74,8 @@ footer{font-size:12px;color:#7f99a8;margin-top:32px}
 <div id="matches" class="results" hidden aria-live="polite"></div>
 <p id="state" role="status" aria-live="polite">Select a network, then search a token name, symbol, or contract. Name matches are not issuer verification.</p>
 <div id="asset"></div>
+<div id="identity" aria-live="polite"></div>
+<p class="buyers">Before buying: confirm the contract, review liquidity and holder concentration, check admin permissions and source-backed supply data. A verified contract is not a safety rating.</p>
 <div id="cards" class="grid"></div>
 <footer>Evidence is token and network specific. NOT VERIFIED does not mean false or zero. This tool does not execute transactions or provide investment advice.</footer>
 </main>
@@ -73,6 +83,9 @@ footer{font-size:12px;color:#7f99a8;margin-top:32px}
 <script>
 'use strict';
 const definitions=window.ARCYEthLabSchema;
+// Buyer-first reading order; the five-card / twenty-field API schema stays intact.
+const buyerOrder=['liquidity','holders','mechanics','supply','activity'];
+const displayDefinitions=[...definitions].sort((a,b)=>buyerOrder.indexOf(a.id)-buyerOrder.indexOf(b.id));
 const $=id=>document.getElementById(id);
 function format(value,key,kind){
   if(typeof value==='boolean')return value?'TRUE':'FALSE';
@@ -93,7 +106,7 @@ function format(value,key,kind){
 function render(report){
   const root=$('cards');
   root.replaceChildren();
-  for(const spec of definitions){
+  for(const spec of displayDefinitions){
     const card=report?.cards?.[spec.id];
     const section=document.createElement('section');
     section.className='card';
@@ -149,8 +162,32 @@ function cancelPending(){
 function clearMatches(){
  const matches=$('matches');matches.hidden=true;matches.replaceChildren();
 }
+function clearIdentity(){$('identity').replaceChildren()}
+function renderIdentity(identity,network){
+ const root=$('identity');root.replaceChildren();
+ const confirmed=identity?.status==='OFFICIAL_CONTRACT_MATCHED'||identity?.status==='REGISTRY_MATCHED';
+ const box=document.createElement('div');box.className='identity'+(confirmed?' verified':'');
+ const name=document.createElement('strong');
+ name.textContent=identity?.status==='OFFICIAL_CONTRACT_MATCHED'?'✓ OFFICIAL CONTRACT MATCHED':
+  identity?.status==='REGISTRY_MATCHED'?'✓ ROBINHOOD OFFICIAL STOCK TOKEN REGISTRY MATCHED':
+  '⚠ TOKEN IDENTITY NOT VERIFIED';
+ const copy=document.createElement('div');
+ copy.textContent=confirmed?('Exact contract and '+(network==='robinhood'?'Robinhood registry':'issuer documentation')+' agree for this network.'):
+  'A matching name, ticker, logo or market listing is not evidence of official origin.';
+ box.append(name,copy);
+ if(confirmed&&typeof identity.proofUrl==='string'&&/^https:\/\//.test(identity.proofUrl)){
+  const url=new URL(identity.proofUrl);
+  if(['developers.circle.com','developers.uniswap.org','api.robinhood.com'].includes(url.hostname)){
+   const link=document.createElement('a');link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';
+   link.textContent='View official source ↗';box.append(link);
+  }
+ }
+ const disclaimer=document.createElement('small');
+ disclaimer.textContent='Contract identity does not verify price, liquidity, issuer solvency or investment safety.';
+ box.append(disclaimer);root.append(box);
+}
 function chainChanged(){
- cancelPending();clearMatches();$('asset').replaceChildren();render(null);
+ cancelPending();clearMatches();$('asset').replaceChildren();clearIdentity();render(null);
  $('address').value='';
  const label=NETWORKS[selected()].label;
  $('address').placeholder='Search '+label+' token name, ticker or 0x contract';
@@ -168,7 +205,7 @@ function baseUrl(route,params){
 async function scanAddress(address,network=selected(),version=searchVersion){
  const info=NETWORKS[network],button=$('go');
  if(!info)return;
- button.disabled=true;clearMatches();$('asset').replaceChildren();render(null);
+ button.disabled=true;clearMatches();$('asset').replaceChildren();clearIdentity();render(null);
  $('state').textContent='Reading '+info.label+' on-chain and external evidence…';
  const controller=requestController();
  try{
@@ -199,12 +236,13 @@ async function scanAddress(address,network=selected(),version=searchVersion){
    registry.textContent='Robinhood official registry: Stock Token contract matched'+(data.tokenIdentity.multiplier?' · Shares-per-token multiplier: '+data.tokenIdentity.multiplier:'')+' · This token does not represent direct share ownership.';
    container.append(registry);
   }
+  renderIdentity(data.tokenIdentity,network);
   render(data);
   $('state').textContent='Chain '+info.id+' · Snapshot complete · '+data.scannedAt+' · Unsupported metrics remain NOT VERIFIED.';
  }catch(error){
   if(version!==searchVersion||network!==selected()||controller.signal.aborted)return;
   $('state').textContent='Scan unavailable: '+String(error.message).slice(0,150);
-  $('asset').replaceChildren();render(null);
+  $('asset').replaceChildren();clearIdentity();render(null);
  }finally{if(version===searchVersion&&network===selected()){button.disabled=false;if(activeController===controller)activeController=null}}
 }
 function showCandidates(data,network,version){
@@ -218,10 +256,14 @@ function showCandidates(data,network,version){
   const info=document.createElement('span'),title=document.createElement('span'),meta=document.createElement('span');
   title.className='candidate-title';title.textContent=(item.name||'Unnamed token')+' ('+(item.symbol||'?')+')';
   meta.className='candidate-meta';
-  meta.textContent=NETWORKS[network].label+' · '+item.address+' · '+(item.source||'Search source')+
-   (item.registryMatched&&network==='robinhood'?' · Official Stock Token registry match':' · Issuer identity NOT VERIFIED');
+  const status=item.identity?.status==='OFFICIAL_CONTRACT_MATCHED'?' · OFFICIAL CONTRACT MATCHED':
+   item.identity?.status==='REGISTRY_MATCHED'?' · ROBINHOOD STOCK TOKEN REGISTRY MATCHED':
+   ' · Identity NOT VERIFIED';
+  meta.textContent=NETWORKS[network].label+' · '+item.address+' · '+(item.source||'Search source')+status;
   info.append(title,meta);
   const choose=document.createElement('span');choose.textContent='SCAN →';
+  const verified=item.identity?.status==='OFFICIAL_CONTRACT_MATCHED'||item.identity?.status==='REGISTRY_MATCHED';
+  if(verified)option.classList.add('official');
   option.append(info,choose);
   option.addEventListener('click',()=>{
    if(version!==searchVersion||network!==selected())return;
@@ -241,7 +283,7 @@ async function searchOrScan(){
   $('state').textContent='Enter a token name (2–48 characters) or a full contract address.';return;
  }
  $('go').disabled=true;$('state').textContent='Finding '+NETWORKS[network].label+' candidates…';
- $('asset').replaceChildren();render(null);
+ $('asset').replaceChildren();clearIdentity();render(null);
  const controller=requestController();
  try{
   const response=await fetch('/api/discover?'+new URLSearchParams({q,chain:network}),{
@@ -261,7 +303,7 @@ async function searchOrScan(){
 $('chain').addEventListener('change',chainChanged);
 $('go').addEventListener('click',searchOrScan);
 $('address').addEventListener('keydown',event=>{if(event.key==='Enter')void searchOrScan()});
-$('address').addEventListener('input',()=>{cancelPending();clearMatches();$('asset').replaceChildren();render(null)});
+$('address').addEventListener('input',()=>{cancelPending();clearMatches();$('asset').replaceChildren();clearIdentity();render(null)});
 
 </script>
 </body>

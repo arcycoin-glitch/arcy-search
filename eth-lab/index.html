@@ -62,11 +62,94 @@ const definitions=window.ARCYEthLabSchema;
 const $=id=>document.getElementById(id);
 function format(value,key,kind){
   if(typeof value==='boolean')return value?'TRUE':'FALSE';
+  const prefix=kind?kind+' ':'';
+  const percent=/^(change24h|largestWalletPct|top10Pct|top20Pct)$/.test(key);
+  const usd=/^(liquidityUsd|volume24h|valuation|priceUsd)$/.test(key);
+  let formatted;
   if(typeof value==='number'&&Number.isFinite(value)){
-    const out=/(Usd|volume|valuation)/i.test(key)?'$'+value.toLocaleString('en-US',{maximumFractionDigits:2}):value.toLocaleString('en-US',{maximumFractionDigits:5});
-    return (kind?kind+' ':'')+out;
+    formatted=value.toLocaleString('en-US',{maximumFractionDigits:percent?4:usd&&key!=='priceUsd'?2:12});
+  }else if(typeof value==='string'&&/^-?\\d+(?:\\.\\d+)?$/.test(value)){
+    const parts=value.split('.');
+    formatted=parts[0].replace(/\\B(?=(\\d{3})+(?!\\d))/g,',')+(parts[1]!==undefined?'.'+parts[1]:'');
+  }else{
+    return prefix+String(value);
   }
-  return (kind?kind+' ':'')+String(value);
+  return prefix+(usd?'function render(report){
+  const root=$('cards');
+  root.replaceChildren();
+  for(const spec of definitions){
+    const card=report?.cards?.[spec.id];
+    const section=document.createElement('section');
+    section.className='card';
+    section.style.setProperty('--accent',spec.accent);
+    const title=document.createElement('h2');
+    title.textContent=spec.title;
+    section.append(title);
+    const description=document.createElement('div');
+    description.className='description';
+    description.textContent=card?.description||'Awaiting verified evidence';
+    section.append(description);
+    for(const [key,label] of spec.fields){
+      const data=card?.fields?.[key];
+      const row=document.createElement('div');
+      row.className='metric';
+      const name=document.createElement('span');
+      name.textContent=label;
+      const result=document.createElement('b');
+      const missing=!data||data.value===null||data.value===undefined;
+      result.className=missing?'no':'';
+      result.textContent=missing?'NOT VERIFIED':format(data.value,key,key==='valuation'?data.kind:null);
+      result.title=data?.reason||data?.source||'';
+      row.append(name,result);
+      section.append(row);
+    }
+    const status=document.createElement('div');
+    status.className='meta';
+    status.textContent=card?.status||'NOT SCANNED';
+    section.append(status);
+    if(card){
+      const details=document.createElement('details');
+      const summary=document.createElement('summary');
+      summary.textContent='View Evidence';
+      const pre=document.createElement('pre');
+      pre.textContent=JSON.stringify(card,null,2);
+      details.append(summary,pre);
+      section.append(details);
+    }
+    root.append(section);
+  }
+}
+render(null);
+async function scan(){
+  const address=$('address').value.trim();
+  if(!/^0x[0-9a-fA-F]{40}$/.test(address)){
+    $('state').textContent='Enter a valid Ethereum contract address.';
+    return;
+  }
+  const button=$('go');
+  button.disabled=true;
+  $('state').textContent='Reading Ethereum and market sources…';
+  try{
+    const response=await fetch('/api/report?address='+encodeURIComponent(address),{signal:AbortSignal.timeout(45000),cache:'no-store'});
+    const data=await response.json();
+    if(!response.ok||data.ok!==true||data.cardCount!==5||!data.cards)throw Error(data.reason||data.error||'Response is not a valid five-card scan');
+    for(const spec of definitions)if(!data.cards[spec.id]||spec.fields.some(([key])=>!data.cards[spec.id].fields?.[key]))throw Error('Missing required card or field in scan response');
+    const asset=data.token;
+    $('asset').textContent=(asset.name||'Unknown token')+' ('+(asset.symbol||'?')+') · Chain '+data.chainId+' · Block '+Number.parseInt(data.block,16);
+    render(data);
+    $('state').textContent='Snapshot complete · '+data.scannedAt+' · Unsupported metrics remain NOT VERIFIED.';
+  }catch(error){
+    $('state').textContent='Scan unavailable: '+String(error.message).slice(0,150);
+    $('asset').textContent='';
+    render(null);
+  }finally{button.disabled=false}
+}
+$('go').addEventListener('click',scan);
+$('address').addEventListener('keydown',event=>{if(event.key==='Enter')scan()});
+</script>
+</body>
+</html>
+:'')+formatted+(percent?'%':'');
 }
 function render(report){
   const root=$('cards');

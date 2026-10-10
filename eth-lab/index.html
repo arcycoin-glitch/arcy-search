@@ -41,9 +41,19 @@ footer{font-size:12px;color:#7f99a8;margin-top:32px}
 .candidate-title{font-weight:700;font-size:13px;overflow-wrap:anywhere}.candidate-meta{display:block;margin-top:4px;color:#9eb6c4;font-size:11px;overflow-wrap:anywhere}
 .candidate-warning{font-size:11px;color:#e6c77a;margin:0 0 10px}
 @media(max-width:550px){.candidate{align-items:flex-start;flex-direction:column}}
-.identity{border:1px solid #28586d;border-left:3px solid #7899b0;background:#102535;border-radius:12px;margin:10px 0;padding:12px 14px;font-size:12px;color:#d6eaf7}
+.identity{position:sticky;top:6px;z-index:20;box-shadow:0 8px 22px rgba(0,0,0,.3);backdrop-filter:blur(10px);border:1px solid #28586d;border-left:3px solid #7899b0;background:#102535;border-radius:12px;margin:10px 0;padding:12px 14px;font-size:12px;color:#d6eaf7}
 .identity.verified{border-left-color:#55dab4;background:#0b2a32}
 .identity strong{display:block;font-size:13px;margin-bottom:4px}
+.identity.unknown{border-left-color:#eca965;background:#30271c}
+#identity:empty{display:none}
+.sourceCount{font-weight:700;font-size:12px;color:#75d9ef;margin-top:8px}
+.reason{font-weight:400;font-size:11px;color:#adc1d0;margin-top:4px;line-height:1.35}
+.metric .result{max-width:60%;text-align:right;min-width:0}
+.metric .result b{display:block;max-width:none}
+.card .statusLine{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.proofTag{display:block;font-size:12px;font-weight:700;color:#7af3c2;margin-top:8px}
+.candidate .candidate-badge{display:inline-block;border-radius:6px;border:1px solid #408e7a;background:#163b32;color:#8ef6c9;padding:4px 8px;font-size:11px;font-weight:800;margin-top:6px}
+.candidate .candidate-badge.unknown{border-color:#665845;background:#31271d;color:#e1bc82}
 .identity a{color:#65e3ff;overflow-wrap:anywhere}
 .identity small{color:#a6c3d2;display:block;margin-top:4px}
 .buyers{color:#b9cfde;font-size:12px;margin:14px 0 18px}
@@ -68,13 +78,14 @@ footer{font-size:12px;color:#7f99a8;margin-top:32px}
 </header>
 <div class="network"><label for="chain">NETWORK</label><select id="chain" aria-label="Select token network"><option value="ethereum">Ethereum · Chain 1</option><option value="robinhood">Robinhood Chain · Chain 4663</option></select><span id="networkNote">Results never mix token data from different networks.</span></div>
 <div class="search">
-<input id="address" aria-label="Token name, ticker or contract address" spellcheck="false" value="0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48" placeholder="Token name, ticker or 0x contract address">
+<input id="address" aria-label="Token name, ticker or contract address" spellcheck="false" value="" placeholder="Token name, ticker or 0x contract address">
 <button id="go">SEARCH / SCAN</button>
 </div>
 <div id="matches" class="results" hidden aria-live="polite"></div>
 <p id="state" role="status" aria-live="polite">Select a network, then search a token name, symbol, or contract. Name matches are not issuer verification.</p>
 <div id="asset"></div>
 <div id="identity" aria-live="polite"></div>
+<div id="evidenceCount" class="sourceCount" aria-live="polite"></div>
 <p class="buyers">Before buying: confirm the contract, review liquidity and holder concentration, check admin permissions and source-backed supply data. A verified contract is not a safety rating.</p>
 <div id="cards" class="grid"></div>
 <footer>Evidence is token and network specific. NOT VERIFIED does not mean false or zero. This tool does not execute transactions or provide investment advice.</footer>
@@ -103,9 +114,39 @@ function format(value,key,kind){
   }
   return prefix+(usd?'$':'')+formatted+(percent?'%':'');
 }
+function shortReason(field){
+ if(!field)return 'This metric has not been scanned.';
+ const code=field.reasonCode||'';
+ const simple={
+  SUPPLY_RECONCILIATION_FAILED:'Reported circulation conflicts with on-chain supply.',
+  EXPLORER_RPC_BALANCE_MISMATCH:'Explorer holder ranking conflicts with on-chain balances.',
+  HOLDER_SUPPLY_RECONCILIATION_FAILED:'Holder balances do not reconcile with token supply.',
+  LP_STATUS_NOT_VERIFIED:'LP owner or lock cannot be established from pool liquidity.',
+  CIRCULATING_SUPPLY_UNAVAILABLE:'No reliable circulating supply from the matched source.',
+  SOURCE_API_FAILED:'Provider did not respond reliably.',
+  INSUFFICIENT_EVIDENCE:'No reliable source has confirmed this metric.',
+  MINT_NOT_VERIFIED:'Mint authority has not been reliably established.',
+  TAXES_NOT_VERIFIED:'Buy/sell taxes could not be independently confirmed.',
+  OWNER_ADMIN_NOT_VERIFIED:'Available getters do not prove the complete admin role.',
+  ARCHITECTURE_NOT_VERIFIED:'Upgrade and proxy permissions need more evidence.'
+ };
+ const raw=simple[code]||field.reason;
+ return typeof raw==='string'&&raw.trim()?raw.trim().slice(0,130):'No reliable chain-specific evidence available.';
+}
 function render(report){
   const root=$('cards');
   root.replaceChildren();
+  const count=$('evidenceCount');count.textContent='';
+  if(report&&report.cards){
+   let valid=0,total=0;
+   for(const card of Object.values(report.cards)){
+    for(const data of Object.values(card.fields||{})){
+     total++;
+     if(data?.dataState==='DATA_FOUND'&&data.value!==null&&data.value!==undefined)valid++;
+    }
+   }
+   count.textContent=valid+' of '+total+' metrics have source-backed values. Missing fields explain why below.';
+  }
   for(const spec of displayDefinitions){
     const card=report?.cards?.[spec.id];
     const section=document.createElement('section');
@@ -124,17 +165,31 @@ function render(report){
       row.className='metric';
       const name=document.createElement('span');
       name.textContent=label;
-      const result=document.createElement('b');
+      const result=document.createElement('div');result.className='result';
+      const value=document.createElement('b');
       const missing=!data||data.value===null||data.value===undefined;
-      result.className=missing?'no':'';
-      result.textContent=missing?'NOT VERIFIED':format(data.value,key,key==='valuation'?data.kind:null);
-      result.title=data?.reason||data?.source||'';
+      value.className=missing?'no':'';
+      value.textContent=!report?'—':missing?'NOT VERIFIED':format(data.value,key,key==='valuation'?data.kind:null);
+      value.title=data?.reason||data?.source||'';
+      result.append(value);
+      if(report&&missing){
+       const why=document.createElement('div');why.className='reason';
+       why.textContent=shortReason(data);
+       result.append(why);
+      }
       row.append(name,result);
       section.append(row);
     }
     const status=document.createElement('div');
-    status.className='meta';
-    status.textContent=card?.status||'NOT SCANNED';
+    status.className='meta statusLine';
+    const state=document.createElement('span');state.textContent=card?.status||'NOT SCANNED';
+    status.append(state);
+    if(card){
+     const sources=document.createElement('span');
+     const ok=Object.values(card.fields||{}).filter(x=>x?.dataState==='DATA_FOUND'&&x.value!==null).length;
+     sources.textContent=ok+' / 4 fields';
+     status.append(sources);
+    }
     section.append(status);
     if(card){
       const details=document.createElement('details');
@@ -166,14 +221,14 @@ function clearIdentity(){$('identity').replaceChildren()}
 function renderIdentity(identity,network){
  const root=$('identity');root.replaceChildren();
  const confirmed=identity?.status==='OFFICIAL_CONTRACT_MATCHED'||identity?.status==='REGISTRY_MATCHED';
- const box=document.createElement('div');box.className='identity'+(confirmed?' verified':'');
+ const box=document.createElement('div');box.className='identity '+(confirmed?'verified':'unknown');
  const name=document.createElement('strong');
- name.textContent=identity?.status==='OFFICIAL_CONTRACT_MATCHED'?'✓ OFFICIAL CONTRACT MATCHED':
-  identity?.status==='REGISTRY_MATCHED'?'✓ ROBINHOOD OFFICIAL STOCK TOKEN REGISTRY MATCHED':
-  '⚠ TOKEN IDENTITY NOT VERIFIED';
+ name.textContent=identity?.status==='OFFICIAL_CONTRACT_MATCHED'?'✓ OFFICIAL CONTRACT · '+(identity.issuer||'ISSUER MATCHED'):
+  identity?.status==='REGISTRY_MATCHED'?'✓ OFFICIAL ROBINHOOD STOCK TOKEN':
+  '⚠ NO OFFICIAL CONTRACT MATCH';
  const copy=document.createElement('div');
- copy.textContent=confirmed?('Exact contract and '+(network==='robinhood'?'Robinhood registry':'issuer documentation')+' agree for this network.'):
-  'A matching name, ticker, logo or market listing is not evidence of official origin.';
+ copy.textContent=confirmed?('Exact contract matched '+(network==='robinhood'?'Robinhood official registry':'issuer-published records')+' on '+NETWORKS[network].label+'.'):
+  'We cannot confirm that this contract is issued by the claimed project. Search results are not proof of authenticity.';
  box.append(name,copy);
  if(confirmed&&typeof identity.proofUrl==='string'&&/^https:\/\//.test(identity.proofUrl)){
   const url=new URL(identity.proofUrl);
@@ -261,6 +316,11 @@ function showCandidates(data,network,version){
    ' · Identity NOT VERIFIED';
   meta.textContent=NETWORKS[network].label+' · '+item.address+' · '+(item.source||'Search source')+status;
   info.append(title,meta);
+  const badge=document.createElement('span');badge.className='candidate-badge';
+  badge.textContent=item.identity?.status==='OFFICIAL_CONTRACT_MATCHED'?'✓ OFFICIAL CONTRACT':
+   item.identity?.status==='REGISTRY_MATCHED'?'✓ OFFICIAL STOCK TOKEN':'⚠ NOT VERIFIED';
+  if(!item.identity||item.identity.status==='NOT_VERIFIED')badge.classList.add('unknown');
+  info.append(badge);
   const choose=document.createElement('span');choose.textContent='SCAN →';
   const verified=item.identity?.status==='OFFICIAL_CONTRACT_MATCHED'||item.identity?.status==='REGISTRY_MATCHED';
   if(verified)option.classList.add('official');

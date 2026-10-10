@@ -14,7 +14,7 @@ const ethereumAdapter={
    token:report.token,fullReport:report};
  },
  async inspectCard({base,cardId}){return base.fullReport.cards[cardId]},
- async discover({query}){return ethereumDiscover.discover(query)}
+ async discover({query}){return (await ethereumDiscover.discover(query)).map(x=>({...x,network:'ethereum',chainId:1}))}
 };
 const engine=createEngine({ethereum:ethereumAdapter,robinhood});
 const ethCache=createCache(async q=>engine.discover({network:'ethereum',query:q}).then(x=>x.candidates));

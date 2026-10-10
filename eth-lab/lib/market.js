@@ -11,24 +11,26 @@ function parse(pairs,token){
     if(!/^0x(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(id)||seen.has(id))return false;
     seen.add(id);return true;
   }).sort((a,b)=>(numeric(b.liquidity?.usd)?b.liquidity.usd:0)-(numeric(a.liquidity?.usd)?a.liquidity.usd:0));
-  const evidence=[{source:'DexScreener',chainId:'ethereum',token,matchedPairs:matching.map(p=>p.pairAddress),scope:'Only source-returned, exact-contract Ethereum pairs; may be incomplete.'}];
+  const evidence=[{source:'DexScreener',chainId:'ethereum',token,matchedPairs:matching.map(p=>p.pairAddress),scope:'Subset of source-returned, exact-contract Ethereum pairs; NOT Ethereum-wide liquidity, volume, or pair count. DexScreener responses may omit pools.'}];
   const sum=get=>matching.length&&matching.every(p=>numeric(get(p)))?matching.reduce((n,p)=>n+get(p),0):null;
   const liquid=sum(p=>p.liquidity?.usd);
   const volume=sum(p=>p.volume?.h24);
-  const pool=matching[0];
-  // DexScreener priceUsd and priceChange describe the base token, not the quote token.
-  const baseMatches=pool&&String(pool.baseToken?.address||'').toLowerCase()===token;
-  const price=baseMatches?Number(pool.priceUsd):NaN;
-  const priceValue=Number.isFinite(price)&&price>0?String(pool.priceUsd):null;
-  const change=baseMatches?pool.priceChange?.h24:undefined;
-  const cap=baseMatches&&Number.isFinite(pool.marketCap)&&pool.marketCap>0?pool.marketCap:null;
-  const fdv=baseMatches&&Number.isFinite(pool.fdv)&&pool.fdv>0?pool.fdv:null;
+  // DexScreener priceUsd and priceChange describe the BASE token only.
+  // The most-liquid matched pool may list our token as the QUOTE asset.
+  // Search all matched pools for a valid exact-base-token price rather than
+  // hiding a usable price or misattributing the quote asset's base price.
+  const pricePool=matching.find(p=>String(p.baseToken?.address||'').toLowerCase()===token
+    &&Number.isFinite(Number(p.priceUsd))&&Number(p.priceUsd)>0);
+  const price=pricePool?Number(pricePool.priceUsd):NaN;
+  const priceValue=Number.isFinite(price)&&price>0?String(pricePool.priceUsd):null;
+  const change=pricePool?.priceChange?.h24;
+  const cap=pricePool&&Number.isFinite(pricePool.marketCap)&&pricePool.marketCap>0?pricePool.marketCap:null;
+  const fdv=pricePool&&Number.isFinite(pricePool.fdv)&&pricePool.fdv>0?pricePool.fdv:null;
   const valuation=cap!==null?{value:cap,kind:'MARKET_CAP'}:fdv!==null?{value:fdv,kind:'FDV'}:null;
   const changeValid=typeof change==='number'&&Number.isFinite(change);
   const pairCount=matching.length;
   const dexCount=pairCount?new Set(matching.map(p=>p.dexId).filter(x=>typeof x==='string'&&x.length>0)).size:null;
   const pairSummary=pairCount&&dexCount?dexCount+' DEX · '+pairCount+' pairs':null;
-  const missingPair=unknown('No exact-matched Ethereum market pairs returned.','NO_MATCHED_MARKET_PAIRS');
   const fields={
     liquidityUsd:liquid===null?unknown('No complete exact-pool liquidity dataset.','LIQUIDITY_NOT_VERIFIED'):found(liquid,'DexScreener',evidence),
     volume24h:volume===null?unknown('No complete exact-pool volume dataset.','VOLUME_NOT_VERIFIED'):found(volume,'DexScreener',evidence),
@@ -38,7 +40,7 @@ function parse(pairs,token){
     valuation:valuation===null?unknown('No exact base-token-matched market cap or FDV.','VALUATION_NOT_VERIFIED'):{...found(valuation.value,'DexScreener',evidence),kind:valuation.kind},
     change24h:!changeValid?unknown('No exact base-token-matched 24h price change.','CHANGE_NOT_VERIFIED'):found(change,'DexScreener',evidence)
   };
-  return {...card(fields,'Contract-matched source-reported Ethereum trading data; not proof of exit liquidity.'),primaryPair:pool?.pairAddress||null,matches:pairCount};
+  return {...card(fields,'Source-returned matched Ethereum pools only; partial coverage is not total market liquidity or guaranteed exit liquidity.'),primaryPair:pricePool?.pairAddress||matching[0]?.pairAddress||null,matches:pairCount};
 }
 async function inspect(address){
  const response=await fetch(API+address,{headers:{accept:'application/json'},signal:AbortSignal.timeout(8000)});

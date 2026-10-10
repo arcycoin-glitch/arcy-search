@@ -111,7 +111,7 @@ async function discover({query}){
  const q=query.normalize('NFKC').trim().replace(/\s+/g,' ');
  if(!SEARCH.test(q)||ADDRESS.test(q))throw Error('Invalid search');
  const candidates=[];
- try{candidates.push(...stocks.search(await officialAssets(),q))}catch{}
+ try{candidates.push(...stocks.search(await officialAssets(),q).map(x=>({...x,network:cfg.id,chainId:cfg.chainId})))}catch{}
  try{
   const res=await fetch('https://api.dexscreener.com/latest/dex/search/?q='+encodeURIComponent(q),{
    headers:{accept:'application/json'},signal:AbortSignal.timeout(8000)

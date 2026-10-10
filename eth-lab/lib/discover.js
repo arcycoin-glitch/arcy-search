@@ -32,13 +32,53 @@ function parse(pairs,rawQuery){
  }
  return [...found.values()].sort((a,b)=>a.relevance-b.relevance||b.liquidity-a.liquidity||a.address.localeCompare(b.address)).slice(0,12).map(({name,symbol,address,chainId,network,source,identityVerified})=>({name,symbol,address,chainId,network,source,identityVerified}));
 }
+const COINGECKO_SEARCH='https://api.coingecko.com/api/v3/search?query=';
+const COINGECKO_DETAIL='https://api.coingecko.com/api/v3/coins/';
+async function coinGeckoFallback(query){
+ const q=query.toLocaleLowerCase('en-US');
+ const search=await fetch(COINGECKO_SEARCH+encodeURIComponent(query),{headers:{accept:'application/json'},signal:AbortSignal.timeout(6500)});
+ if(!search.ok)throw Error('CoinGecko discovery search HTTP '+search.status);
+ const body=await readJson(search,512*1024);
+ if(!Array.isArray(body?.coins))throw Error('Invalid CoinGecko discovery response');
+ const relevant=body.coins.filter(x=>{
+  const name=String(x?.name||'').toLocaleLowerCase('en-US'),symbol=String(x?.symbol||'').toLocaleLowerCase('en-US');
+  return /^[a-z0-9-]{2,100}$/.test(String(x?.id||''))&&(name.includes(q)||symbol.includes(q));
+ }).slice(0,3);
+ const details=await Promise.allSettled(relevant.map(async coin=>{
+  const url=COINGECKO_DETAIL+encodeURIComponent(coin.id)+'?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false&sparkline=false';
+  const response=await fetch(url,{headers:{accept:'application/json'},signal:AbortSignal.timeout(6500)});
+  if(!response.ok)throw Error('CoinGecko detail HTTP '+response.status);
+  const detail=await readJson(response,512*1024);
+  if(detail?.id!==coin.id)return null;
+  const address=String(detail.platforms?.ethereum||'').toLowerCase();
+  if(!ADDRESS.test(address))return null;
+  return {name:String(coin.name||'').slice(0,90),symbol:String(coin.symbol||'').slice(0,30),address,chainId:1,network:'Ethereum',source:'CoinGecko',identityVerified:false};
+ }));
+ const result=[],seen=new Set();
+ for(const detail of details)if(detail.status==='fulfilled'&&detail.value&&!seen.has(detail.value.address)){
+  seen.add(detail.value.address);result.push(detail.value);
+ }
+ return result;
+}
 async function discover(rawQuery){
  const q=normalizeQuery(rawQuery);
  if(!q)throw Error('Invalid discovery query');
- const response=await fetch(SOURCE+'?q='+encodeURIComponent(q),{headers:{accept:'application/json'},signal:AbortSignal.timeout(8000)});
- if(!response.ok)throw Error('Token discovery source HTTP '+response.status);
- const json=await readJson(response,2*1024*1024);
- if(!json||typeof json!=='object'||(json.pairs!==null&&!Array.isArray(json.pairs)))throw Error('Malformed token discovery response');
- return parse(json.pairs||[],q);
+ let market=[],marketError=null;
+ try{
+  const response=await fetch(SOURCE+'?q='+encodeURIComponent(q),{headers:{accept:'application/json'},signal:AbortSignal.timeout(8000)});
+  if(!response.ok)throw Error('Token discovery source HTTP '+response.status);
+  const json=await readJson(response,2*1024*1024);
+  if(!json||typeof json!=='object'||(json.pairs!==null&&!Array.isArray(json.pairs)))throw Error('Malformed token discovery response');
+  market=parse(json.pairs||[],q);
+ }catch(e){marketError=e}
+ if(market.length>=3)return market;
+ try{
+  const lookup=await coinGeckoFallback(q);
+  const seen=new Set(market.map(x=>x.address));
+  return [...market,...lookup.filter(x=>!seen.has(x.address))].slice(0,12);
+ }catch(e){
+  if(marketError)throw Error('All discovery providers unavailable');
+  return market;
+ }
 }
-module.exports={normalizeQuery,parse,discover};
+module.exports={normalizeQuery,parse,coinGeckoFallback,discover};

@@ -96,12 +96,16 @@ async function inspect(address,block,rawSupply){
    const count=parseCount(info);
    if(!count)return blank('A positive explorer holder count was not established.','COUNT_NOT_VERIFIED');
    const reported=found(count,'Blockscout',[{provider:'Blockscout',address,scope:'Source-reported current holder count; may not match an earlier pinned block.'}],'SOURCE_REPORTED');
-   if(count>MAX_HOLDERS)return card({
-     holderCount:reported,
-     largestWalletPct:unknown('Large token holder indexing requires a complete historical snapshot service.','LARGE_HOLDER_SET'),
-     top10Pct:unknown('Large token holder indexing requires a complete historical snapshot service.','LARGE_HOLDER_SET'),
-     top20Pct:unknown('Large token holder indexing requires a complete historical snapshot service.','LARGE_HOLDER_SET')
-   },'Explorer holder count only; no incomplete whale percentages.');
+   if(count>MAX_HOLDERS){
+     const sourceRank=await require('./large-holders').inspect(address.toLowerCase(),block,rawSupply,count);
+     return card({
+       holderCount:reported,
+       ...sourceRank.fields
+     },sourceRank.rankedEvidence
+       ?'Blockscout-ranked top 20 with RPC-reconciled pinned balances. Ranking completeness remains SOURCE_REPORTED.'
+       :'Blockscout-reported holder count only; ranked candidates could not be reconciled.'
+     );
+   }
    if(count<20)return card({
      holderCount:reported,
      largestWalletPct:unknown('Fewer than 20 holders; complete top-20 convention must be decided.','SMALL_HOLDER_SET'),

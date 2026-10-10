@@ -8,6 +8,7 @@ const {readJson}=require('./http');
 const {uint,units,abiString,BURN,ADDRESS}=require('./eth');
 const cfg=chain('robinhood');
 const DEFAULT_FALLBACK='https://robinhood.drpc.org';
+const READ_ONLY=new Set(['eth_chainId','eth_blockNumber','eth_getCode','eth_call','eth_getStorageAt','eth_getBlockByNumber']);
 let nextId=0;
 function providers(env=process.env){
  const primary=rpcUrl('robinhood',env);
@@ -22,6 +23,7 @@ function retryable(error){
  return Boolean(error?.retryable)||['AbortError','TimeoutError','TypeError'].includes(error?.name);
 }
 async function requestAt(endpoint,method,params,{timeoutMs=11000}={}){
+ if(!READ_ONLY.has(method))throw Error('Robinhood RPC method not allowed in read-only lab');
  const id=++nextId;
  // A ref-counted watchdog is essential: AbortSignal.timeout() is unref'd
  // in Node and a stalled mocked/provider promise could otherwise exit silently.
@@ -55,7 +57,9 @@ async function rpc(method,params,opts={}){
   try{
    if(i!==0&&method!=='eth_chainId')
     verifyChainId('robinhood',await requestAt(endpoints[i],'eth_chainId',[],opts));
-   return await requestAt(endpoints[i],method,params,opts);
+   const value=await requestAt(endpoints[i],method,params,opts);
+   if(i!==0&&method==='eth_chainId')verifyChainId('robinhood',value);
+   return value;
   }catch(error){
    last=error;
    if(!retryable(error))throw error;

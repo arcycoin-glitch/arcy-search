@@ -39,6 +39,15 @@ test('market returns explicit unavailable data when no market pairs found',()=>{
  assert.equal(x.fields.priceUsd.value,null);
  assert.equal(x.fields.valuation.value,null);
 });
+test('market accepts mixed-case composite v4 pool keys and de-duplicates case-insensitively',()=>{
+ const id='0x'+'Ef'.repeat(20)+'-'+token+'-0x'+'b'.repeat(40);
+ const p={...pair,pairAddress:id};
+ const duplicate={...p,pairAddress:id.toLowerCase()};
+ const x=parse([p,duplicate],token);
+ assert.equal(x.matches,1);
+ assert.equal(x.fields.dexPairCount.value,'1 DEX · 1 pairs');
+ assert.equal(x.fields.liquidityUsd.dataState,'DATA_FOUND');
+});
 test('quoted token is not incorrectly priced using base token price',()=>{
  const quoted={...pair,baseToken:{address:'0x'+'b'.repeat(40)},quoteToken:{address:token}};
  const x=parse([quoted],token);
@@ -95,7 +104,13 @@ test('supply card has no unlock and retains four evidence fields',()=>{
  assert.deepEqual(keys,['totalSupply','circulatingSupply','burnAddressBalance','burnAddressPct']);
 });
 test('burn share requires real RPC balances',()=>{
- const x=burnAddressPercent({status:'ON_CHAIN',value:'1000'},{status:'ON_CHAIN',value:'25'},'0x1','0x'+'a'.repeat(40));
+ const x=burnAddressPercent('1000','25','0x1','0x'+'a'.repeat(40));
  assert.equal(x.value,2.5);
- assert.equal(burnAddressPercent({status:'ON_CHAIN',value:'1000'},{status:'NOT_VERIFIED',value:null},'0x1',token).value,null);
+ assert.equal(burnAddressPercent('1000',null,'0x1',token).value,null);
+});
+test('burn share uses integer raw balances for large supplies',()=>{
+ const supply='10000000000000000000000000000000000000000000000000000000000000000000000000000000';
+ const burn='2500000000000000000000000000000000000000000000000000000000000000000000000000000';
+ assert.equal(burnAddressPercent(supply,burn,'0x1',token).value,25);
+ assert.equal(burnAddressPercent(supply,(BigInt(supply)+1n).toString(),'0x1',token).value,null);
 });

@@ -13,11 +13,13 @@ function unavailable(description,fields){
 function copyFields(source,keys,description){
  return evidence.card(Object.fromEntries(keys.map(key=>[key,source.fields[key]||evidence.unknown('Metric adapter has not returned an evidence field.')])),description);
 }
-function burnAddressPercent(total,burn,block,address){
- const a=Number(total?.value), b=Number(burn?.value);
- if(total?.status!=='ON_CHAIN'||burn?.status!=='ON_CHAIN'||!Number.isFinite(a)||!Number.isFinite(b)||a<=0||b<0||b>a)
+function burnAddressPercent(totalRaw,burnRaw,block,address){
+ if(typeof totalRaw!=='string'||!/^[1-9][0-9]*$/.test(totalRaw)||typeof burnRaw!=='string'||!/^(0|[1-9][0-9]*)$/.test(burnRaw))
  return evidence.unknown('Standard burn-address share cannot be reconciled.','BURN_SHARE_NOT_VERIFIED');
- return evidence.found(Math.round(b/a*1000000)/10000,'Ethereum RPC',[{block,address,method:'balanceOf(0x0 and 0xdead) / totalSupply()',scope:'Current balances only, not historic burned total.'}],'ON_CHAIN_DERIVED');
+ const supply=BigInt(totalRaw),burn=BigInt(burnRaw);
+ if(supply<=0n||burn>supply)return evidence.unknown('Standard burn-address share cannot be reconciled.','BURN_SHARE_NOT_VERIFIED');
+ const scaled=(burn*1000000n+supply/2n)/supply;
+ return evidence.found(Number(scaled)/10000,'Ethereum RPC',[{chainId:1,block,address,method:'balanceOf(0x0 and 0xdead) / totalSupply()',scope:'Current balances only, not historic burned total.'}],'ON_CHAIN_DERIVED');
 }
 function mechanicsCard(controls,securityData={}){
  const owner=controls.fields?.owner;
@@ -50,7 +52,7 @@ async function build(address){
    totalSupply:onChain(t.fields.totalSupply),
    circulatingSupply:circ,
    burnAddressBalance:onChain(t.fields.burnAddressBalance),
-   burnAddressPct:burnAddressPercent(t.fields.totalSupply,t.fields.burnAddressBalance,t.block,t.address)
+   burnAddressPct:burnAddressPercent(t.totalSupplyRaw,t.burnAddressRaw,t.block,t.address)
  },'Pinned-block on-chain supply and standard burn address balances.');
  const holders=copyFields(h,['holderCount','largestWalletPct','top10Pct','top20Pct'],'Explorer-reported holder count; concentration not asserted without complete rankings.');
  const liquidity=copyFields(m,['liquidityUsd','volume24h','dexPairCount','lpStatus'],'Exact-matched source-reported market data. LP permissions remain unverified.');

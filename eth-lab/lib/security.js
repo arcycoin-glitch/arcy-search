@@ -1,10 +1,11 @@
 'use strict';
 const {found,unknown}=require('./evidence');
 const {ADDRESS}=require('./eth');
+const {readJson}=require('./http');
 const BASE='https://api.gopluslabs.io/api/v1/token_security/1';
 const field=(name,reason)=>unknown(reason||'GoPlus has not provided an attributable security observation.',name.toUpperCase()+'_NOT_VERIFIED');
 function parse(body,address){
- if(body?.code!==undefined&&body.code!==1&&body.code!=='1')return {taxes:field('taxes','GoPlus did not confirm successful analysis.'),mint:field('mint','GoPlus did not confirm successful analysis.'),securityStatus:'SOURCE_FAILED'};
+ if(body?.code!==1&&body?.code!=='1')return {taxes:field('taxes','GoPlus did not confirm successful analysis.'),mint:field('mint','GoPlus did not confirm successful analysis.'),securityStatus:'SOURCE_FAILED'};
  const result=body?.result;
  if(!result||typeof result!=='object'||Array.isArray(result))return {taxes:field('taxes'),mint:field('mint'),securityStatus:'NOT_VERIFIED'};
  const raw=result[address.toLowerCase()]||result[address]||Object.entries(result).find(([key])=>key.toLowerCase()===address.toLowerCase())?.[1];
@@ -36,7 +37,7 @@ async function inspect(address){
   const url=BASE+'?contract_addresses='+encodeURIComponent(address.toLowerCase());
   const response=await fetch(url,{headers:{accept:'application/json'},signal:AbortSignal.timeout(8500)});
   if(!response.ok)throw Error('Security source unavailable');
-  return parse(await response.json(),address);
+  return parse(await readJson(response,1024*1024),address);
  }catch{
   return {taxes:field('taxes','Security provider unavailable.'),mint:field('mint','Security provider unavailable.'),securityStatus:'SOURCE_API_FAILED'};
  }

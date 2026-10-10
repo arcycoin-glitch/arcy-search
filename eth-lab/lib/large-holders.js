@@ -7,6 +7,7 @@
  */
 const {rpc,ADDRESS,uint}=require('./eth');
 const {found,unknown,card}=require('./evidence');
+const {readJson}=require('./http');
 const BASE='https://eth.blockscout.com/api/v2/tokens/';
 const TOP_SIZE=21; // top 20 plus rank #21 as an ordering boundary
 const MAX_REQUEST_TIMEOUT_MS=8500;
@@ -66,7 +67,7 @@ function evaluate(page,chainBalances,totalSupply,block,token,count){
 async function fetchPage(token){
  const r=await fetch(BASE+token+'/holders',{headers:{accept:'application/json'},signal:AbortSignal.timeout(MAX_REQUEST_TIMEOUT_MS)});
  if(!r.ok)throw Error('Blockscout ranked-holder HTTP '+r.status);
- const p=await r.json();
+ const p=await readJson(r,512*1024);
  if(!p||typeof p!=='object'||Array.isArray(p))throw Error('Malformed ranked holder response');
  return p;
 }

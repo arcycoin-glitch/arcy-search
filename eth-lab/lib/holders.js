@@ -1,6 +1,7 @@
 'use strict';
 const {found,unknown,error,card}=require('./evidence');
 const {rpc,ADDRESS,uint}=require('./eth');
+const {readJson}=require('./http');
 const API='https://eth.blockscout.com/api/v2/tokens/';
 const MAX_HOLDERS=30;
 const blank=(reason,code='HOLDER_SNAPSHOT_NOT_VERIFIED')=>card(Object.fromEntries(['holderCount','largestWalletPct','top10Pct','top20Pct'].map(k=>[k,unknown(reason,code)])),'Ethereum holder snapshot; no partial concentration is represented as verified.');
@@ -46,7 +47,7 @@ function calculate(addresses,balances,supply,count,block,token){
 async function json(url){
  const response=await fetch(url,{headers:{accept:'application/json'},signal:AbortSignal.timeout(8000)});
  if(!response.ok)throw Error('Explorer HTTP '+response.status);
- const body=await response.json();
+ const body=await readJson(response,512*1024);
  if(!body||typeof body!=='object'||Array.isArray(body))throw Error('Malformed explorer response');
  return body;
 }

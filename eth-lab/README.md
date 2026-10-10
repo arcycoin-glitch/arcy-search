@@ -7,7 +7,7 @@ Experiment: `arcycoin-glitch/arcy-search`, branch `eth-lab`, root directory `eth
 The production GitHub repository and production Vercel deployment have **not** been changed.
 
 ## Five original production cards — exactly 4 metrics each
-1. Unlock & Supply: Total Supply, Circulating Supply, Burn Address Balance, Next Unlock.
+1. Unlock & Supply: Total Supply, Circulating Supply, Burn Address Balance, Burn Address % (current zero/dead-address holdings divided by current total supply).
 2. Holder & Whale: Holder Count, Largest Wallet %, Top 10 Concentration, Top 20 Concentration.
 3. Liquidity & Exit: Liquidity USD, 24H Volume, DEX / Pair Count, LP Status.
 4. Market Activity: Price, Market Cap / FDV, 24H Change, 24H Volume.

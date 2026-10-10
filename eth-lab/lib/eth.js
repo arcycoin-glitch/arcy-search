@@ -1,14 +1,26 @@
 'use strict';
 const CHAIN_ID=1;
-const RPC_URL=process.env.ETH_RPC_URL||'https://ethereum-rpc.publicnode.com';
+function resolveRpcUrl(value){
+  let url;
+  try{url=new URL(value)}catch{throw Error('ETH_RPC_URL must be a valid HTTPS URL or loopback HTTP URL')}
+  const host=url.hostname.replace(/^\[|\]$/g,'').toLowerCase();
+  const loopback=['localhost','127.0.0.1','::1'].includes(host);
+  if(url.username||url.password||!(url.protocol==='https:'||(url.protocol==='http:'&&loopback)))throw Error('ETH_RPC_URL must use HTTPS (or loopback HTTP) and cannot contain URL credentials');
+  return url.toString();
+}
+const RPC_URL=resolveRpcUrl(process.env.ETH_RPC_URL||'https://ethereum-rpc.publicnode.com');
 const BURN=['0x0000000000000000000000000000000000000000','0x000000000000000000000000000000000000dead'];
 const ADDRESS=/^0x[0-9a-fA-F]{40}$/;
+const {readJson}=require('./http');
 let rpcId=0;
-async function rpc(method,params){
-  const response=await fetch(RPC_URL,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:++rpcId,method,params}),signal:AbortSignal.timeout(12000)});
+async function rpc(method,params,{timeoutMs=12000}={}){
+  const id=++rpcId;
+  const response=await fetch(RPC_URL,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id,method,params}),signal:AbortSignal.timeout(timeoutMs)});
   if(!response.ok)throw Error('Ethereum RPC HTTP '+response.status);
-  const result=await response.json();
-  if(result.error||!Object.hasOwn(result,'result'))throw Error('Ethereum RPC request failed');
+  const result=await readJson(response,1024*1024);
+  if(!result||typeof result!=='object'||Array.isArray(result)||result.jsonrpc!=='2.0'||result.id!==id)throw Error('Ethereum RPC response identity mismatch');
+  if(result.error)throw Error('Ethereum RPC method failed: '+method+(Number.isInteger(result.error.code)?' ('+result.error.code+')':''));
+  if(!Object.hasOwn(result,'result'))throw Error('Ethereum RPC response missing result: '+method);
   return result.result;
 }
 function uint(hex){
@@ -47,18 +59,18 @@ async function inspect(address){
   const decimals=Number(uint(d));
   const supply=status(units(raw,decimals),'totalSupply()',block);
   const addresses=await Promise.allSettled(BURN.map(a=>call('0x70a08231'+a.slice(2).padStart(64,'0')).then(uint)));
-  const burn=addresses.every(x=>x.status==='fulfilled')?status(units(addresses.reduce((n,x)=>n+x.value,0n),decimals),'balanceOf(zero/dead)',block):unknown('One or both standard burn-address balances were unavailable.');
+  const burnRaw=addresses.every(x=>x.status==='fulfilled')?addresses.reduce((n,x)=>n+x.value,0n):null;
+  const burn=burnRaw!==null?status(units(burnRaw,decimals),'balanceOf(zero/dead)',block):unknown('One or both standard burn-address balances were unavailable.');
   const [nameResult,symbolResult]=await Promise.allSettled([call('0x06fdde03'),call('0x95d89b41')]);
   const name=nameResult.status==='fulfilled'?abiString(nameResult.value):null;
   const symbol=symbolResult.status==='fulfilled'?abiString(symbolResult.value):null;
   return {
-    ok:true,chainId:CHAIN_ID,address:normalized,block,scannedAt:new Date().toISOString(),token:{name,symbol,decimals},totalSupplyRaw:raw.toString(),
+    ok:true,chainId:CHAIN_ID,address:normalized,block,scannedAt:new Date().toISOString(),token:{name,symbol,decimals},totalSupplyRaw:raw.toString(),burnAddressRaw:burnRaw?.toString()??null,
     fields:{
       totalSupply:supply,burnAddressBalance:burn,
-      circulatingSupply:unknown('On-chain total supply is not verified circulating supply. External contract-matched evidence is required.'),
-      nextUnlock:unknown('A verified source-reported vesting schedule is required.')
+      circulatingSupply:unknown('On-chain total supply is not verified circulating supply. External contract-matched evidence is required.')
     },
     methodology:'Read-only calls at one Ethereum block. Burn balance is current custody at 0x0 and 0xdead; not lifetime burned or verified buyback activity.'
   };
 }
-module.exports={CHAIN_ID,BURN,ADDRESS,rpc,uint,units,abiString,inspect};
+module.exports={CHAIN_ID,BURN,ADDRESS,RPC_URL,resolveRpcUrl,rpc,uint,units,abiString,inspect};

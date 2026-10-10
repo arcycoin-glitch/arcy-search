@@ -4,15 +4,15 @@ const {parse:security}=require('../lib/security');
 const {nextEvent}=require('../lib/unlocks');
 const token='0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
 test('security report must match exact contract',()=>{
- const bad=security({result:{['0x'+'a'.repeat(40)]:{buy_tax:'0',sell_tax:'0',transfer_tax:'0',is_mintable:'0'}}},token);
+ const bad=security({code:1,result:{['0x'+'a'.repeat(40)]:{buy_tax:'0',sell_tax:'0',transfer_tax:'0',is_mintable:'0'}}},token);
  assert.equal(bad.taxes.value,null);assert.equal(bad.mint.value,null);
 });
 test('all three fee observations required',()=>{
- const report=security({result:{[token]:{buy_tax:'0.03',sell_tax:'0.03',is_mintable:'1'}}},token);
+ const report=security({code:1,result:{[token]:{buy_tax:'0.03',sell_tax:'0.03',is_mintable:'1'}}},token);
  assert.equal(report.taxes.value,null);assert.equal(report.mint.status,'SOURCE_REPORTED');
 });
 test('well-formed security fees explicitly source-reported',()=>{
- const report=security({result:{[token]:{buy_tax:'0.03',sell_tax:'0.02',transfer_tax:'0',is_mintable:'0'}}},token);
+ const report=security({code:1,result:{[token]:{buy_tax:'0.03',sell_tax:'0.02',transfer_tax:'0',is_mintable:'0'}}},token);
  assert.equal(report.taxes.status,'SOURCE_REPORTED');
  assert.match(report.taxes.value,/Buy 3%/);
 });
@@ -26,6 +26,12 @@ test('unlock must match Ethereum contract and recent review',()=>{
 
 test('GoPlus non-success status cannot be shown as detected fees',()=>{
  const result=security({code:0,result:{[token]:{buy_tax:'0.04',sell_tax:'0',transfer_tax:'0',is_mintable:'0'}}},token);
+ assert.equal(result.taxes.value,null);
+ assert.equal(result.mint.value,null);
+});
+test('GoPlus response without explicit success code is not verified',()=>{
+ const result=security({result:{[token]:{buy_tax:'0',sell_tax:'0',transfer_tax:'0',is_mintable:'0'}}},token);
+ assert.equal(result.securityStatus,'SOURCE_FAILED');
  assert.equal(result.taxes.value,null);
  assert.equal(result.mint.value,null);
 });

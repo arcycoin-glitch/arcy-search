@@ -1,11 +1,12 @@
 'use strict';
 const {found,unknown,error}=require('./evidence');
 const {ADDRESS}=require('./eth');
+const {readJson}=require('./http');
 const BASE='https://api.coingecko.com/api/v3/coins/ethereum/contract/';
 const MAX_AGE_MS=10*60*1000;
 const cache=new Map();
 const same=(a,b)=>typeof a==='string'&&a.toLowerCase()===b;
-function parse(body,address,onchainSupply){
+function parse(body,address,onchainSupply,observedAt=Date.now()){
  const no=(message,code)=>unknown(message,code);
  if(!body||typeof body!=='object'||Array.isArray(body))return no('CoinGecko returned invalid data.','MALFORMED_SOURCE_DATA');
  const contract=same(body.contract_address,address)||same(body.detail_platforms?.ethereum?.contract_address,address);
@@ -20,22 +21,23 @@ function parse(body,address,onchainSupply){
    coinId:typeof body.id==='string'?body.id:null,
    comparison:'Contract identity matched; positive source-reported circulating <= pinned on-chain total supply.',
    scope:'Provider-reported circulating supply, not an on-chain verified wallet-by-wallet circulation calculation.'
- }],'SOURCE_REPORTED');
+ }],'SOURCE_REPORTED',observedAt);
 }
 async function inspect(address,onchainSupply){
  if(!ADDRESS.test(address))return unknown('Invalid Ethereum contract address.','INVALID_ADDRESS');
  const key=address.toLowerCase(),entry=cache.get(key);
- if(entry&&Date.now()-entry.at<MAX_AGE_MS)return parse(entry.body,key,onchainSupply);
+ if(entry&&Date.now()-entry.at<MAX_AGE_MS)return parse(entry.body,key,onchainSupply,entry.at);
  try{
   const response=await fetch(BASE+key+'?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false',{
    headers:{accept:'application/json'},signal:AbortSignal.timeout(9000)
   });
   if(response.status===404)return unknown('No contract-matched CoinGecko listing for this Ethereum token.','SOURCE_HAS_NO_DATA');
   if(!response.ok)throw Error('CoinGecko upstream HTTP '+response.status);
-  const body=await response.json();
-  const result=parse(body,key,onchainSupply);
+  const body=await readJson(response,1024*1024);
+  const retrievedAt=Date.now();
+  const result=parse(body,key,onchainSupply,retrievedAt);
   // Cache only parsed and validated identity responses; do not cache provider errors.
-  if(result.dataState==='DATA_FOUND')cache.set(key,{body,at:Date.now()});
+  if(result.dataState==='DATA_FOUND')cache.set(key,{body,at:retrievedAt});
   return result;
  }catch(e){return error(e,'CoinGecko')}
 }

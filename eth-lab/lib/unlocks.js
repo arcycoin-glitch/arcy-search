@@ -19,10 +19,10 @@ function nextEvent(rows,address,now=new Date()){
   const reviewed=new Date(row.reviewedAt);
   if(!Number.isFinite(reviewed.getTime())||reviewed.getTime()>now.getTime()||now.getTime()-reviewed.getTime()>MAX_AGE_DAYS*86400000)continue;
   for(const e of row.events){
-   if(!e||typeof e.date!=='string'||!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$/.test(e.date))continue;
+   if(!e||typeof e.date!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(e.date))continue;
    const when=new Date(e.date);
    if(!Number.isFinite(when.getTime())||when.getTime()<=now.getTime()||when.toISOString().replace('.000Z','Z')!==e.date)continue;
-   if(typeof e.amount!=='string'||!/^(?:0|[1-9]\\d*)(?:\\.\\d+)?$/.test(e.amount)||!/[1-9]/.test(e.amount))continue;
+   if(typeof e.amount!=='string'||!/^(?:0|[1-9]\d*)(?:\\.\d+)?$/.test(e.amount)||!/[1-9]/.test(e.amount))continue;
    eligible.push({event:e,when,row});
   }
  }

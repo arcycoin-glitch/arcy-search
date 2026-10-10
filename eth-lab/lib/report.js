@@ -32,7 +32,7 @@ function mechanicsCard(controls){
 }
 async function build(address){
  const t=await inspectToken(address);
- const [marketResult,controlResult,holderResult,circulatingResult]=await Promise.allSettled([market.inspect(t.address),control.inspect(t.address,t.block),holdersSource.inspect(t.address,t.block,t.fields.totalSupply.value),circulation.inspect(t.address,t.fields.totalSupply.value)]);
+ const [marketResult,controlResult,holderResult,circulatingResult]=await Promise.allSettled([market.inspect(t.address),control.inspect(t.address,t.block),holdersSource.inspect(t.address,t.block,t.totalSupplyRaw),circulation.inspect(t.address,t.fields.totalSupply.value)]);
  const m=marketResult.status==='fulfilled'?marketResult.value:market.failure(marketResult.reason);
  const c=controlResult.status==='fulfilled'?controlResult.value:control.failure(controlResult.reason);
  const h=holderResult.status==='fulfilled'?holderResult.value:holdersSource.blank('Holder provider request failed.','SOURCE_API_FAILED');

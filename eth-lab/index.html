@@ -35,6 +35,12 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:250px;overflow:auto;c
 footer{font-size:12px;color:#7f99a8;margin-top:32px}
 @media(max-width:860px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:550px){main{padding:22px 13px}header{align-items:start}.grid{grid-template-columns:1fr}.search{flex-direction:column}.search button{width:100%}}
+.results{display:grid;gap:8px;margin:0 0 16px}.results[hidden]{display:none}
+.candidate{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:13px 15px;border:1px solid #28576b;background:#0c2434;color:#eaf6ff;border-radius:12px;text-align:left;cursor:pointer}
+.candidate:hover,.candidate:focus-visible{border-color:#32d5fb;background:#12354b;outline:none}
+.candidate-title{font-weight:700;font-size:13px;overflow-wrap:anywhere}.candidate-meta{display:block;margin-top:4px;color:#9eb6c4;font-size:11px;overflow-wrap:anywhere}
+.candidate-warning{font-size:11px;color:#e6c77a;margin:0 0 10px}
+@media(max-width:550px){.candidate{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
 <body>
@@ -47,10 +53,11 @@ footer{font-size:12px;color:#7f99a8;margin-top:32px}
 <span class="chip">ETH LAB · READ ONLY</span>
 </header>
 <div class="search">
-<input id="address" aria-label="Token contract address" spellcheck="false" value="0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48" placeholder="Ethereum ERC-20 contract address">
-<button id="go">SCAN TOKEN</button>
+<input id="address" aria-label="Token name, ticker or contract address" spellcheck="false" value="0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48" placeholder="Token name, ticker or 0x contract address">
+<button id="go">SEARCH / SCAN</button>
 </div>
-<p id="state" role="status" aria-live="polite">Experimental. Enter a contract to check independently sourced evidence.</p>
+<div id="matches" class="results" hidden aria-live="polite"></div>
+<p id="state" role="status" aria-live="polite">Enter a token name, symbol or Ethereum contract address. Name results are not identity verification.</p>
 <div id="asset"></div>
 <div id="cards" class="grid"></div>
 <footer>Evidence is token and network specific. NOT VERIFIED does not mean false or zero. This tool does not execute transactions or provide investment advice.</footer>
@@ -122,32 +129,93 @@ function render(report){
   }
 }
 render(null);
-async function scan(){
-  const address=$('address').value.trim();
-  if(!/^0x[0-9a-fA-F]{40}$/.test(address)){
-    $('state').textContent='Enter a valid Ethereum contract address.';
-    return;
-  }
-  const button=$('go');
-  button.disabled=true;
-  $('state').textContent='Reading Ethereum and market sources…';
-  try{
-    const response=await fetch('/api/report?address='+encodeURIComponent(address),{signal:AbortSignal.timeout(45000),cache:'no-store'});
-    const data=await response.json();
-    if(!response.ok||data.ok!==true||data.cardCount!==5||!data.cards)throw Error(data.reason||data.error||'Response is not a valid five-card scan');
-    for(const spec of definitions)if(!data.cards[spec.id]||spec.fields.some(([key])=>!data.cards[spec.id].fields?.[key]))throw Error('Missing required card or field in scan response');
-    const asset=data.token;
-    $('asset').textContent=(asset.name||'Unknown token')+' ('+(asset.symbol||'?')+') · Chain '+data.chainId+' · Block '+Number.parseInt(data.block,16);
-    render(data);
-    $('state').textContent='Snapshot complete · '+data.scannedAt+' · Unsupported metrics remain NOT VERIFIED.';
-  }catch(error){
-    $('state').textContent='Scan unavailable: '+String(error.message).slice(0,150);
-    $('asset').textContent='';
-    render(null);
-  }finally{button.disabled=false}
+const ETH_ADDRESS=/^0x[0-9a-fA-F]{40}$/;
+let searchVersion=0;
+function clearMatches(){
+ const list=$('matches');
+ list.hidden=true;
+ list.replaceChildren();
 }
-$('go').addEventListener('click',scan);
-$('address').addEventListener('keydown',event=>{if(event.key==='Enter')scan()});
+async function scanAddress(address){
+ const button=$('go');
+ button.disabled=true;
+ clearMatches();
+ $('state').textContent='Reading Ethereum and market sources…';
+ try{
+  const response=await fetch('/api/report?address='+encodeURIComponent(address),{signal:AbortSignal.timeout(45000),cache:'no-store'});
+  const data=await response.json();
+  if(!response.ok||data.ok!==true||data.cardCount!==5||!data.cards)throw Error(data.reason||data.error||'Response is not a valid five-card scan');
+  for(const spec of definitions)if(!data.cards[spec.id]||spec.fields.some(([key])=>!data.cards[spec.id].fields?.[key]))throw Error('Missing required card or field in scan response');
+  const asset=data.token;
+  $('asset').textContent=(asset.name||'Unknown token')+' ('+(asset.symbol||'?')+') · Ethereum · '+data.address+' · Block '+Number.parseInt(data.block,16);
+  render(data);
+  $('state').textContent='Snapshot complete · '+data.scannedAt+' · Unsupported metrics remain NOT VERIFIED.';
+ }catch(error){
+  $('state').textContent='Scan unavailable: '+String(error.message).slice(0,150);
+  $('asset').textContent='';
+  render(null);
+ }finally{button.disabled=false}
+}
+function showCandidates(data){
+ const list=$('matches');
+ list.replaceChildren();
+ const warning=document.createElement('p');
+ warning.className='candidate-warning';
+ warning.textContent='Source-reported name matches only. Same-name scam tokens may appear. Verify the Ethereum contract before selecting.';
+ list.append(warning);
+ for(const item of data.matches){
+  if(item.chainId!==1||!ETH_ADDRESS.test(item.address))continue;
+  const option=document.createElement('button');
+  option.type='button';option.className='candidate';
+  const info=document.createElement('span');
+  const title=document.createElement('span');title.className='candidate-title';
+  title.textContent=(item.name||'Unnamed token')+' ('+(item.symbol||'?')+')';
+  const meta=document.createElement('span');meta.className='candidate-meta';
+  meta.textContent='Ethereum · '+item.address+' · Source: DexScreener · Identity NOT VERIFIED';
+  info.append(title,meta);
+  const choose=document.createElement('span');choose.textContent='SCAN →';
+  option.append(info,choose);
+  option.addEventListener('click',()=>{
+   searchVersion++;
+   $('address').value=item.address;
+   scanAddress(item.address);
+  });
+  list.append(option);
+ }
+ list.hidden=false;
+}
+async function searchOrScan(){
+ const value=$('address').value.trim();
+ searchVersion++;
+ const currentVersion=searchVersion;
+ clearMatches();
+ if(ETH_ADDRESS.test(value)){await scanAddress(value);return}
+ if(value.length<2||value.length>48||/^0x/i.test(value)){
+  $('state').textContent='Enter a token name (2–48 characters) or a full Ethereum contract address.';
+  return;
+ }
+ const button=$('go');
+ button.disabled=true;
+ $('state').textContent='Finding Ethereum token candidates…';
+ $('asset').textContent='';
+ render(null);
+ try{
+  const res=await fetch('/api/discover?q='+encodeURIComponent(value),{signal:AbortSignal.timeout(12000),cache:'no-store'});
+  const data=await res.json();
+  if(currentVersion!==searchVersion)return;
+  if(!res.ok||data.ok!==true||data.chainId!==1||!Array.isArray(data.matches))throw Error(data.error||'Token name lookup unavailable');
+  if(!data.matches.length){$('state').textContent='No Ethereum token candidates found. Try the exact contract address.';return}
+  showCandidates(data);
+  $('state').textContent=data.matches.length+' token candidate(s) returned. Select the correct Ethereum contract to scan.';
+ }catch(e){
+  if(currentVersion!==searchVersion)return;
+  $('state').textContent='Token search unavailable: '+String(e.message).slice(0,100);
+ }finally{button.disabled=false}
+}
+$('go').addEventListener('click',searchOrScan);
+$('address').addEventListener('keydown',event=>{if(event.key==='Enter')searchOrScan()});
+$('address').addEventListener('input',()=>{searchVersion++;clearMatches()});
+
 </script>
 </body>
 </html>

@@ -58,3 +58,11 @@ Server-side optional `ETH_RPC_URL` must be an Ethereum Mainnet RPC (chain ID 1).
 Added `lib/circulating.js` (CoinGecko Ethereum exact-contract source reports), `lib/holders.js` (Blockscout count only, no invented percentages), and `test/sources.test.js` for validation gates. Both sources are plugged into the existing five-card report without changing the production repository.
 
 Live-provider integration testing, production RPC reconciliation, complete holder ranking and Codex audit are still pending. The minimal offline JavaScript test harness is not a substitute for `npm test` or network E2E testing. Do not promote to production yet.
+
+## Small-token Holder & Whale snapshot checkpoint
+
+- The Blockscout / Ethereum RPC adapter now attempts a full, paginated address population **only for 20–30 reported holders**. This intentionally conservative limit keeps RPC and Vercel runtime cost bounded.
+- It reads `balanceOf` for every listed address at the same pinned block as the token's `totalSupply`, requires distinct valid addresses, strictly positive balances, consistent source count, and an exact raw-supply sum. Only then are largest/top-10/top-20 concentration percentages displayed as reconciled snapshots.
+- For more than 30 holders, Holder Count is source-reported only. Concentration metrics remain `NOT VERIFIED` until a scalable and independently tested indexed snapshot pipeline exists.
+- Full-supply reconciliation cannot establish the quality of individual project claims, economic wallet ownership, beneficial owners or multi-wallet clustering. Contracts with rebasing or nonstandard balance semantics may fail this strict test.
+- No live Blockscout pagination or Ethereum mainnet end-to-end verification was completed during this implementation. Audit the API response shape and request timeouts before considering this production ready.

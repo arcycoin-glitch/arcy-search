@@ -22,7 +22,7 @@ function nextEvent(rows,address,now=new Date()){
    if(!e||typeof e.date!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(e.date))continue;
    const when=new Date(e.date);
    if(!Number.isFinite(when.getTime())||when.getTime()<=now.getTime()||when.toISOString().replace('.000Z','Z')!==e.date)continue;
-   if(typeof e.amount!=='string'||!/^(?:0|[1-9]\d*)(?:\\.\d+)?$/.test(e.amount)||!/[1-9]/.test(e.amount))continue;
+   if(typeof e.amount!=='string'||!/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(e.amount)||!/[1-9]/.test(e.amount))continue;
    eligible.push({event:e,when,row});
   }
  }

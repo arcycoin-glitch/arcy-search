@@ -21,3 +21,10 @@ test('all five buyer-first cards and source-coverage summary remain present',()=
  assert.match(html,/function shortReason\(field\)/);
  assert.match(html,/shortReason\(data\)/);
 });
+
+test('sourced metrics remain visible and missing values are available on demand',()=>{
+ assert.match(html,/const missingRows=\[\]/);
+ assert.match(html,/if\(report&&missing\)missingRows\.push\(row\)/);
+ assert.match(html,/Show '\+missingRows\.length\+' unverified checks and reasons/);
+ assert.match(html,/No source-backed values available for this token/);
+});

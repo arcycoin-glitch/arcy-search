@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev": "node dev.cjs",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "smoke": "node scripts/live-smoke.cjs"
   }
 }

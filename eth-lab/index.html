@@ -63,7 +63,7 @@ const $=id=>document.getElementById(id);
 function format(value,key,kind){
   if(typeof value==='boolean')return value?'TRUE':'FALSE';
   const prefix=kind?kind+' ':'';
-  const percent=/^(change24h|largestWalletPct|top10Pct|top20Pct)$/.test(key);
+  const percent=/^(change24h|largestWalletPct|top10Pct|top20Pct|burnAddressPct)$/.test(key);
   const usd=/^(liquidityUsd|volume24h|valuation|priceUsd)$/.test(key);
   let formatted;
   if(typeof value==='number'&&Number.isFinite(value)){

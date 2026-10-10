@@ -88,10 +88,7 @@ function format(value,key,kind){
   }else{
     return prefix+String(value);
   }
-  return prefix+(usd?'
-</body>
-</html>
-:'')+formatted+(percent?'%':'');
+  return prefix+(usd?'$':'')+formatted+(percent?'%':'');
 }
 function render(report){
   const root=$('cards');

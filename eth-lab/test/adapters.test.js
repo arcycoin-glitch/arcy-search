@@ -23,3 +23,13 @@ test('unlock must match Ethereum contract and recent review',()=>{
  assert.equal(nextEvent([{...row,chainId:8453}],token,new Date('2026-10-10T00:00:00Z')).value,null);
  assert.equal(nextEvent([{...row,reviewedAt:'2025-01-01T00:00:00Z'}],token,new Date('2026-10-10T00:00:00Z')).value,null);
 });
+
+test('GoPlus non-success status cannot be shown as detected fees',()=>{
+ const result=security({code:0,result:{[token]:{buy_tax:'0.04',sell_tax:'0',transfer_tax:'0',is_mintable:'0'}}},token);
+ assert.equal(result.taxes.value,null);
+ assert.equal(result.mint.value,null);
+});
+test('empty security tax value cannot be coerced to a verified zero',()=>{
+ const result=security({code:1,result:{[token]:{buy_tax:'',sell_tax:'0',transfer_tax:'0'}}},token);
+ assert.equal(result.taxes.value,null);
+});

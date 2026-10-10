@@ -81,7 +81,7 @@ function format(value,key,kind){
   const usd=/^(liquidityUsd|volume24h|valuation|priceUsd)$/.test(key);
   let formatted;
   if(typeof value==='number'&&Number.isFinite(value)){
-    formatted=value.toLocaleString('en-US',{maximumFractionDigits:percent?4:usd&&key!=='priceUsd'?2:12});
+    formatted=percent&&value>0&&value<0.00000001?value.toExponential(3):value.toLocaleString('en-US',{maximumFractionDigits:percent?10:usd&&key!=='priceUsd'?2:12});
   }else if(typeof value==='string'&&/^-?\d+(?:\.\d+)?$/.test(value)){
     const parts=value.split('.');
     formatted=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',')+(parts[1]!==undefined?'.'+parts[1]:'');

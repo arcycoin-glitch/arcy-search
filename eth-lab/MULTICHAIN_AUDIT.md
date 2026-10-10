@@ -40,3 +40,26 @@ From eth-lab directory:
 - npm run dev (browse localhost:3001)
 
 **Conclusion:** Two-chain local test application is functional and independently browser tested, but NOT ready for unrestricted public launch.
+
+## Robinhood mainnet RPC HTTP 403 recovery — 2026-10-11
+
+**Problem:** Codex's earlier live Robinhood smoke was BLOCKED by an RPC HTTP 403. Public Robinhood RPC is explicitly shared and rate limited; the same endpoint succeeded from a different Vercel Sandbox session. Intermittent provider access is a deployment blocker without tested provider resilience.
+
+**Implemented only on multichain-lab:**
+- Primary remains the official Robinhood public RPC, or optional custom `ROBINHOOD_RPC_URL` configured server-side.
+- Default fallback after HTTP 403, 429, 5xx, timeout or transport failure: public `https://robinhood.drpc.org` (documented dRPC provider; not a production SLA).
+- Optional `ROBINHOOD_RPC_FALLBACK_URL` accepts an HTTPS endpoint or literal `disabled` to disable the backup. No RPC tokens should be committed or exposed in the browser. Configured provider credentials belong in secure server-side environment variables.
+- Each **full token inspection** is performed from chain ID verification through pinned ERC-20 calls against one provider. If a provider fails for retryable reasons, the inspection restarts from chain verification on the fallback. Any wrong-chain response, missing contract, malformed JSON or inconsistent RPC evidence fails closed; never mix two providers' token-supply snapshots.
+- RPC module enforces an explicit read-only method allowlist. No write transaction methods are permitted.
+- Replaced unref'd AbortSignal timeout with a ref-counted AbortController watchdog so injected stalled provider calls cannot silently exit the smoke test without a result.
+
+**Evidence collected on Vercel Sandbox, not a public Vercel preview deployment:**
+- Official Robinhood and dRPC both returned chain ID 4663, matching pinned block hashes and exact contract supply for an Everpure Stock Token.
+- PublicNode returned HTTP 403 on some historical block calls, so it is not the default backup. Triport no-key endpoint returned HTTP 401 in this environment; not configured.
+- Unit/regression: **116 / 116 PASS**, including real 403-to-backup simulation, wrong network rejection, fail-closed errors, timeout and read-only method guard.
+- Robinhood live smoke **10/10 PASS (blocked 0, failed 0)** with default official provider.
+- Robinhood live smoke **10/10 PASS** when explicitly testing PublicNode as primary and dRPC as backup (provider access may vary by region).
+- Ethereum live smoke **9/9 PASS**.
+- **Not yet re-tested on Codex's original laptop**. If 403 recurs on both providers, configure a legitimate, key-protected provider such as Robinhood's documented Alchemy endpoint, and rerun live acceptance checks; do not bypass access challenges.
+
+**Remaining release blockers:** Global distributed Vercel WAF/rate limit for all API paths, protected preview deployment authorization/quota, independently confirmed Codex source review, Blockscout holder endpoint HTTP 403, unverified Robinhood tax/LP/circulating and Stock Token-specific economics. The working lab is **NOT production ready** and no Vercel deployment was triggered by this change.

@@ -35,7 +35,9 @@ Server-side optional `ETH_RPC_URL` must be an Ethereum Mainnet RPC (chain ID 1).
 ## Sources and limitations
 - Ethereum RPC: pinned-block on-chain ERC-20 metrics, selected contract getters and EIP-1967 implementation slot (not a complete admin/ownership review).
 - DexScreener: exact Ethereum contract-matched pairs and source-reported liquidity, 24H volume, base-token primary-pool price, market-cap/FDV label, 24H change. DexScreener is a provider report, **not** on-chain evidence. Price and valuation are not inferred from a pool where the requested token is the quote asset.
-- Holder indexing, verified circulating supply, token unlock schedules, LP locks, mint authority, upgrade permissions and contract-specific trading taxes require further reliable source adapters. Their output must remain **NOT VERIFIED**, not zero or false.
+- CoinGecko circulating supply adapter is connected with exact Ethereum contract identity, positive values and pinned on-chain supply reconciliation; it remains **SOURCE_REPORTED**, not an independent on-chain proof. CoinGecko may not list a token or may rate-limit requests.
+- Blockscout holder count is connected as **SOURCE_REPORTED**, never claimed as a reconciled on-chain wallet enumeration. Holder ranking, concentration percentages, token unlock schedules, LP locks, mint authority, upgrade permissions and contract-specific trading taxes still require proven adapters and remain **NOT VERIFIED**.
+- New adapters have failure isolation. Missing or inaccessible sources must never be silently converted to zero.
 - `schema.js` is shared by report validation, front-end rendering and unit tests; five cards and twenty metrics are mandatory.
 
 ## Codex final audit checklist
@@ -50,3 +52,9 @@ Server-side optional `ETH_RPC_URL` must be an Ethereum Mainnet RPC (chain ID 1).
 9. Check separate Vercel staging environment and only propose production merge after all acceptance criteria pass.
 
 **Promotion gate:** this lab must never be merged to ARCY production solely because its UI renders. Final contract-level checks and Codex QA are required. No wallet connection, token deployment, swap, private keys or fund transfers.
+
+## Latest isolated development checkpoint — 10 Oct 2026
+
+Added `lib/circulating.js` (CoinGecko Ethereum exact-contract source reports), `lib/holders.js` (Blockscout count only, no invented percentages), and `test/sources.test.js` for validation gates. Both sources are plugged into the existing five-card report without changing the production repository.
+
+Live-provider integration testing, production RPC reconciliation, complete holder ranking and Codex audit are still pending. The minimal offline JavaScript test harness is not a substitute for `npm test` or network E2E testing. Do not promote to production yet.

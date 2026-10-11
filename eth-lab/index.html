@@ -356,7 +356,7 @@ function safeCandidateImage(raw){
   const u=new URL(raw);
   if(u.protocol!=='https:'||u.username||u.password||u.port||u.hash||
     !['coin-images.coingecko.com','assets.coingecko.com',
-      'cdn.dexscreener.com','dd.dexscreener.com'].includes(u.hostname))return null;
+      'cdn.dexscreener.com','dd.dexscreener.com','assets.geckoterminal.com'].includes(u.hostname))return null;
   if(/\.(?:svg|html?|xml|pdf)(?:$|\/)/i.test(u.pathname))return null;
   return u.href;
  }catch{return null}

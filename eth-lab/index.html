@@ -228,6 +228,28 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
 @media(prefers-reduced-motion:reduce){.hero-greeting-video{display:none!important}
  .hero-mascot>img{opacity:1!important}}
 
+
+/* Minimal token discovery results: one clean list, no ticker wall. */
+#matches{margin:16px auto 34px;max-width:810px}
+.candidate{min-height:68px;border:1px solid rgba(129,204,230,.18);border-radius:14px;
+ background:rgba(8,29,44,.96);padding:12px 15px;transition:border-color .16s,background .16s,transform .16s}
+.candidate:hover,.candidate:focus-visible{background:#102d3e;border-color:#58bbcf;transform:translateY(-1px)}
+.candidate-logo{width:46px;height:46px;border:1px solid rgba(126,191,214,.22);
+ border-radius:50%;background:#173447;color:#a6d2e0}
+.candidate-logo img{object-fit:contain;background:#102738;border-radius:50%;padding:1px}
+.candidate-title{font-size:14px;line-height:1.4;letter-spacing:-.01em}
+.candidate-meta{color:#7f9eaf;font-size:11px;margin-top:5px}
+.candidate-badge{display:inline-block;font-size:10px;letter-spacing:.01em;margin-top:7px}
+.candidate .scan-label{padding:0;color:#85c8dd;font-size:19px;font-weight:400}
+.candidate-warning,.candidate-footnote{color:#90a9ba;line-height:1.6;font-size:11px}
+.candidate-list{gap:8px}
+.candidate-extra{border:1px solid rgba(129,204,230,.16);background:#0b1d2b;margin-top:7px}
+.candidate-extra>summary{color:#95c9da}
+.candidate-primary{border-color:rgba(88,195,214,.4)}
+.candidate.official{background:#0c2b35;border-color:rgba(78,184,166,.31)}
+@media(max-width:550px){.candidate{flex-direction:row;align-items:center;padding:11px 12px}
+ .candidate .scan-label{padding:0}.candidate-title{font-size:13px}
+ .candidate-detail{gap:11px;min-width:0}.candidate-logo{width:42px;height:42px}}
 </style>
 </head>
 <body>
@@ -784,15 +806,16 @@ function showCandidates(data,network,version){
    item.identity?.status==='REGISTRY_MATCHED'?' · ROBINHOOD STOCK TOKEN REGISTRY MATCHED':
    item.identity?.status==='INDEXED_ON_COINGECKO'?' · COINGECKO LISTED (issuer NOT VERIFIED)':
    ' · Identity NOT VERIFIED';
-  meta.textContent=NETWORKS[network].label+' · '+item.address+' · '+(item.source||'Search source')+status;
+  meta.textContent=item.address.slice(0,8)+'…'+item.address.slice(-6)+' · '+(item.source||'Indexed candidate');
   info.append(title,meta);
   const badge=document.createElement('span');badge.className='candidate-badge';
-  badge.textContent=item.identity?.status==='OFFICIAL_CONTRACT_MATCHED'?'✓ OFFICIAL CONTRACT':
-   item.identity?.status==='REGISTRY_MATCHED'?'✓ OFFICIAL STOCK TOKEN':
-   item.identity?.status==='INDEXED_ON_COINGECKO'?'ℹ COINGECKO LISTED':'⚠ NOT VERIFIED';
+  badge.textContent=item.identity?.status==='OFFICIAL_CONTRACT_MATCHED'?'✓ Official':
+   item.identity?.status==='REGISTRY_MATCHED'?'✓ Registry':
+   item.identity?.status==='INDEXED_ON_COINGECKO'?'CoinGecko indexed':'Unverified';
   if(!item.identity||item.identity.status==='NOT_VERIFIED')badge.classList.add('unknown');
   info.append(badge);detail.append(art,info);
-  const choose=document.createElement('span');choose.textContent='SCAN →';choose.className='scan-label';
+  const choose=document.createElement('span');choose.textContent='→';choose.className='scan-label';
+  option.setAttribute('aria-label',(item.name||item.symbol||'Token')+' · '+NETWORKS[network].label+' · contract '+item.address+' · '+badge.textContent);
   if(official(item))option.classList.add('official');
   option.append(detail,choose);
   option.addEventListener('click',()=>{
@@ -814,13 +837,21 @@ function showCandidates(data,network,version){
    expandable.append(summary,content);container.append(expandable);
   }
  }else{
-  // No issuer confirmation: do not silently choose an arbitrary token.
-  // Show all candidate identities, including each exact contract and its sourced artwork.
+  // An unknown ticker may have many independent contracts. Never silently
+  // choose a first "official" token or hide the alternative addresses.
   const list=document.createElement('div');list.className='candidate-list';
-  for(const candidate of candidates)list.append(candidateElement(candidate));
+  for(const candidate of candidates.slice(0,3))list.append(candidateElement(candidate));
   container.append(list);
+  if(candidates.length>3){
+   const more=document.createElement('details');more.className='candidate-extra';
+   const heading=document.createElement('summary');
+   heading.textContent='Show '+(candidates.length-3)+' other matching contracts';
+   const others=document.createElement('div');others.className='candidate-extra-list';
+   for(const candidate of candidates.slice(3))others.append(candidateElement(candidate));
+   more.append(heading,others);container.append(more);
+  }
   const footnote=document.createElement('p');footnote.className='candidate-footnote';
-  footnote.textContent=candidates.length+' separate token contracts. Choose by full address; the same ticker/logo can represent different projects.';
+  footnote.textContent='The same name and logo can belong to different contracts. Open a result to verify its complete address.';
   container.append(footnote);
  }
  container.hidden=false;

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="ARCY SEARCH — Arc, Ethereum and Robinhood Chain token intelligence research lab.">
 <link rel="icon" href="/assets/hero-arcy.png" type="image/png">
+<link rel="stylesheet" href="/home-sections.css">
 <title>ARCY SEARCH — Multichain Lab</title>
 <style>
 :root{font-family:Inter,system-ui,Arial;color:#eaf6ff;background:#040b15}
@@ -320,7 +321,14 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
   <div><span>Burn-address balance</span><strong id="burnHeld">—</strong></div>
   <div><span>Burn-address share</span><strong id="burnShare">—</strong></div>
  </div>
- <p class="section-status" id="burnProof" role="status" aria-live="polite">Checking signed chain-specific evidence when this section is visible…</p>
+ <p class="section-status" id="burnProof" role="status" aria-live="polite">Checking chain-specific evidence when this section is visible…</p>
+</section>
+<section class="home-section" id="arcPulse" aria-labelledby="pulseHeading">
+ <div class="section-kicker">ARCY · FIRST-PARTY SOURCES</div>
+ <div class="home-heading"><h2 id="pulseHeading">Arc Weekly Pulse</h2><span id="pulseWeek" class="pulse-week">Weekly review</span></div>
+ <p class="section-lead">The most meaningful source-dated Arc ecosystem developments. No recycled headlines.</p>
+ <div id="pulseEntries" class="pulse-entries" aria-live="polite"></div>
+ <p id="pulseProof" class="section-status" role="status" aria-live="polite">Checking first-party sources when visible…</p>
 </section>
 </section>
 <section id="tokenDetail" hidden aria-label="Token research">
@@ -368,6 +376,7 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
 <script src="/schema.js"></script>
 <script src="/format.js"></script>
 <script src="/hero-greeting.js" defer></script>
+<script src="/home-pulse.js" defer></script>
 <script>
 'use strict';
 const definitions=window.ARCYEthLabSchema;

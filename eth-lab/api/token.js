@@ -16,7 +16,7 @@ module.exports=async function handler(req,res){
  try{network=service.parseChain(p.chain)}catch{return res.status(400).json({ok:false,error:'UNSUPPORTED_CHAIN'})}
  if(!enforce(req,res))return;
  try{return res.status(200).json(await service.token({network,address}))}
- catch{return res.status(502).json({ok:false,network,chainId:network==='ethereum'?1:4663,
+ catch{return res.status(502).json({ok:false,network,chainId:require('../lib/chains').chain(network).chainId,
   address:address.toLowerCase(),error:'CHAIN_TOKEN_UNAVAILABLE',
   reason:'Mainnet token contract could not be verified.',scannedAt:new Date().toISOString()})}
 };

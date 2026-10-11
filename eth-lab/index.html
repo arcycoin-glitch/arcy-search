@@ -277,7 +277,7 @@ function renderIdentity(identity,network){
  box.append(name,copy);
  if((confirmed||indexed)&&typeof identity.proofUrl==='string'&&/^https:\/\//.test(identity.proofUrl)){
   const url=new URL(identity.proofUrl);
-  if(['developers.circle.com','developers.uniswap.org','docs.chain.link','tether.to','api.robinhood.com','github.com','www.wbtc.network','shib.io','www.coingecko.com','docs.ondo.foundation'].includes(url.hostname)){
+  if(['developers.circle.com','developers.uniswap.org','docs.chain.link','tether.to','api.robinhood.com','github.com','www.wbtc.network','shib.io','www.coingecko.com','docs.ondo.foundation','paxos.com'].includes(url.hostname)){
    const link=document.createElement('a');link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';
    link.textContent=indexed?'View CoinGecko entry ↗':'View official source ↗';box.append(link);
   }

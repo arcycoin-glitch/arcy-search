@@ -182,9 +182,12 @@ async function main(){
    await page.locator('#go').click();
    await page.waitForSelector('.candidate');
    assert.equal(await page.locator('.candidate').count(),1);
+   assert.equal(await page.locator('.candidate-logo img').getAttribute('src'),'/assets/hero-arcy.png');
    await page.locator('.candidate').click();
    await page.waitForURL('**/token/arc/'+addr);
    await page.waitForFunction(()=>document.querySelector('#detailState').textContent.includes('Snapshot complete'));
+   assert.equal(await page.locator('#asset .token-title-logo').getAttribute('src'),'/assets/hero-arcy.png');
+   await page.locator('#asset .token-title-logo').evaluate(img=>img.decode());
    await page.locator('#backSearch').click();
    await page.locator('#address').fill('0x123');
    await page.locator('#go').click();

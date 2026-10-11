@@ -68,3 +68,39 @@ test('Chainlink LINK and Tether USDT must match issuer-published Ethereum contra
  assert.equal(verified('robinhood',USDT),null);
  assert.equal(verified('ethereum',CLONE),null);
 });
+
+test('more original tokens require issuer first-party Ethereum contract proofs',()=>{
+ const cases=[
+  ['DAI','0x6b175474e89094c44da98b954eedeac495271d0f','Sky / Maker'],
+  ['WBTC','0x2260fac5e5542a773aa44fbcfedf7c193bc2c599','WBTC'],
+  ['SHIB','0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce','Shiba Inu'],
+  ['BONE','0x9813037ee2218799597d83d4a5b6f3b6778218d9','Shiba Inu'],
+  ['LEASH','0x27c70cd1946795b66be9d954418546998b546634','Shiba Inu'],
+  ['TREAT','0xa02c49da76a085e4e1ee60a6b920ddbc8db599f4','Shiba Inu']
+ ];
+ for(const [symbol,address,issuer] of cases){
+  const known=knownMatches('ethereum',symbol);
+  assert.equal(known[0].address,address);
+  assert.equal(verified('ethereum',address).issuer,issuer);
+  assert.equal(verified('robinhood',address),null);
+  assert.equal(verified('ethereum',CLONE),null);
+ }
+});
+test('CoinGecko-indexed Ethereum address is prioritized but NEVER called issuer official',()=>{
+ const INDEXED='0x6982508145454ce325ddbe47a25d4ec3d2311933';
+ const rows=rank('ethereum','PEPE',[
+  {network:'ethereum',chainId:1,address:CLONE,name:'Pepe',symbol:'PEPE',source:'DexScreener'},
+  {network:'ethereum',chainId:1,address:INDEXED,name:'Pepe',symbol:'PEPE',source:'CoinGecko',catalogCoinId:'pepe'}
+ ]);
+ assert.equal(rows[0].address,INDEXED);
+ assert.equal(rows[0].identity.status,'INDEXED_ON_COINGECKO');
+ assert.equal(rows[0].identityVerified,false);
+ assert.equal(rows[0].identity.issuer,null);
+ assert.equal(rows[1].identity.status,'NOT_VERIFIED');
+ assert.equal(verified('ethereum',INDEXED),null);
+ assert.equal(rank('robinhood','PEPE',[{...rows[0],network:'robinhood',chainId:4663}])[0].identity.status,'NOT_VERIFIED');
+});
+test('unattributed CoinGecko mention without validated coin id cannot be indexed',()=>{
+ const m=rank('ethereum','PEPE',[{network:'ethereum',chainId:1,address:CLONE,source:'CoinGecko',name:'Pepe',symbol:'PEPE'}]);
+ assert.equal(m[0].identity.status,'NOT_VERIFIED');
+});

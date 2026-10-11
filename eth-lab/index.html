@@ -91,6 +91,78 @@ footer{font-size:12px;color:#7f99a8;margin-top:32px}
 #networkNote{color:#86aabc}
 @media(max-width:550px){.network{align-items:stretch;flex-direction:column}.network select{width:100%}}
 footer .source-link{margin-top:14px}footer .source-link a{color:#67dcf3;text-underline-offset:3px}footer .source-link a:focus-visible{outline:2px solid #45dfff;outline-offset:4px}
+
+/* ARCY SEARCH DESIGN SYSTEM — intentionally quiet, airy, and premium. */
+:root{color-scheme:dark;--midnight:#06111d;--panel:#0a1b2a;--stroke:rgba(160,202,228,.13);--quiet:#9bb1c2;--cyan:#6ad7ed}
+body{background:radial-gradient(ellipse 80% 550px at 50% -220px,#10384b 0,transparent 85%),#06111d;color:#e7f4fb}
+main{max-width:1170px;padding-top:34px}
+header{border-bottom:1px solid var(--stroke);padding-bottom:22px;margin-bottom:52px}
+header .sub{letter-spacing:.12em;text-transform:uppercase;font-size:10px}
+h1{font-size:clamp(23px,3.2vw,34px);font-weight:780;letter-spacing:.01em}
+h1 span{color:var(--cyan)}
+.chip{font-size:10px;letter-spacing:.08em;border-color:var(--stroke);background:#0c1b2b;color:#91afc2}
+#discovery{max-width:810px;margin:0 auto;min-height:57vh}
+.hero{text-align:center;padding:clamp(35px,7vh,80px) 0 30px}
+.hero .eyebrow{color:#69d8e8;letter-spacing:.22em;font-size:10px;font-weight:800;text-transform:uppercase}
+.hero h2{font-size:clamp(32px,5vw,58px);letter-spacing:-.045em;font-weight:740;line-height:1.12;margin:19px auto 15px;max-width:720px}
+.hero p{font-size:14px;line-height:1.8;color:var(--quiet);max-width:540px;margin:0 auto}
+.network{justify-content:center;margin-bottom:17px}
+.network select{min-width:230px;background:#0e2434;border-color:#27485b;font-weight:600}
+#networkNote{font-size:11px}
+.search{border:1px solid #31556a;background:rgba(14,34,50,.82);padding:8px;box-shadow:0 12px 46px rgba(0,0,0,.15)}
+.search:focus-within{border-color:#69bfd6}
+.search button{border-radius:11px;background:#62cbe5;color:#031523;letter-spacing:.04em;box-shadow:none}
+.search input{font-size:15px}
+#state{color:#91aabc;text-align:center;margin:18px 0}
+#tokenDetail{max-width:1060px;margin:0 auto}
+#tokenDetail[hidden],#discovery[hidden]{display:none!important}
+.detail-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 28px}
+.text-control{background:none;border:0;color:#a8d5e3;cursor:pointer;font-size:12px;letter-spacing:.02em;padding:8px 0}
+.text-control:hover,.text-control:focus-visible{color:#fff;text-decoration:underline;outline-offset:3px}
+.detail-hero{border-bottom:1px solid var(--stroke);padding:0 0 27px;margin-bottom:25px}
+.detail-kicker{letter-spacing:.2em;color:#6fbfd3;text-transform:uppercase;font-weight:700;font-size:10px;margin:0 0 12px}
+#asset{margin:8px 0 13px;line-height:1.75}
+#asset span:first-child{font-weight:760;font-size:clamp(20px,3vw,33px);letter-spacing:-.035em;display:block}
+#asset a{font-size:12px;color:#83b6ca!important;text-underline-offset:4px}
+#asset span:last-child{display:block;color:#7792a5;font-size:11px}
+#identity{position:static;max-width:810px}
+.identity{backdrop-filter:none;box-shadow:none;background:#0c2130!important;border-color:var(--stroke);border-left-width:2px}
+#evidenceCount{font-size:12px;color:#82bfcf}
+#detailState{font-size:12px;color:#9fbbc9;min-height:17px;margin:14px 0}
+.detail-quick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0 20px}
+.quick{padding:18px 19px;background:#0a1b29;border:1px solid var(--stroke);border-radius:14px}
+.quick-label{display:block;letter-spacing:.06em;color:#93b4c4;font-size:11px;margin-bottom:7px}
+.quick-value{font-size:clamp(19px,2.5vw,26px);letter-spacing:-.03em;font-weight:730}
+.quick small{display:block;margin-top:8px;color:#7895a5;font-size:10px}
+.chart-shell{background:#091b2a;border:1px solid var(--stroke);border-radius:18px;padding:23px;margin-bottom:28px;min-height:155px}
+.chart-shell h2{font-size:16px;letter-spacing:-.01em;margin:0 0 10px}
+.chart-shell .chart-note{color:#90a9b9;font-size:12px;line-height:1.7}
+.chart-shell a{color:#7ad5eb;text-underline-offset:3px;font-size:12px}
+.research-intro{margin:40px 0 14px}
+.research-intro h2{font-size:22px;letter-spacing:-.03em;margin:0 0 7px}
+.research-intro p{color:#8eaabb;font-size:12px;line-height:1.6;margin:0}
+.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.card{border:1px solid var(--stroke);border-top:2px solid var(--accent);border-left:1px solid var(--stroke);background:#0b1d2c;padding:21px;min-height:unset;border-radius:15px}
+.card h2{font-size:15px}
+.card .description{font-size:11px;line-height:1.6;color:#83a3b6}
+.card .metric{border-bottom-color:var(--stroke)}
+.card .meta{font-size:10px;color:#7898aa}
+#deepResearch{border:1px solid var(--stroke);border-radius:16px;padding:0 20px;background:#081927;margin-top:20px}
+#deepResearch>summary{cursor:pointer;list-style:none;font-size:13px;padding:19px 4px;color:#aaddf0;font-weight:700}
+#deepResearch>summary::after{content:' +';float:right}
+#deepResearch[open]>summary::after{content:' −'}
+#deepResearch .grid{padding:0 0 20px}
+.buyers{color:#8ba7b8;font-size:12px;margin:12px 0 18px;line-height:1.7}
+.research-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:25px 0}
+.research-tool{border:1px solid var(--stroke);border-radius:15px;padding:18px 19px;background:#0b1e2c}
+.research-tool h3{font-size:14px;margin:0 0 7px;font-weight:670}
+.research-tool p{font-size:12px;line-height:1.6;color:#91acbb;margin:0}
+.research-tool .state{font-size:10px;color:#aab5bd;letter-spacing:.05em;margin-top:12px}
+#shareStatus{color:#b0d9e5;font-size:11px;min-height:18px}
+footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margin-top:65px}
+@media(max-width:700px){main{padding:20px 15px 64px}header{margin-bottom:30px;padding-bottom:18px}.hero{padding:47px 0 25px}.detail-quick{grid-template-columns:repeat(2,minmax(0,1fr))}.grid,.research-tools{grid-template-columns:1fr}.chart-shell{padding:19px}.detail-toolbar{flex-wrap:wrap}.chip{display:none}}
+@media(max-width:400px){.detail-quick{grid-template-columns:1fr 1fr}.quick{padding:13px}.quick-value{font-size:19px}.hero h2{font-size:36px}}
+
 </style>
 </head>
 <body>
@@ -102,6 +174,12 @@ footer .source-link{margin-top:14px}footer .source-link a{color:#67dcf3;text-und
 </div>
 <span class="chip">MULTICHAIN LAB · READ ONLY</span>
 </header>
+<section id="discovery">
+<div class="hero">
+  <div class="eyebrow">ARCY · TOKEN INTELLIGENCE</div>
+  <h2>Know what you're buying.</h2>
+  <p>Three chains. One clear picture. Search any token, verify its contract, and research the evidence before you decide.</p>
+</div>
 <div class="network"><label for="chain">NETWORK</label><select id="chain" aria-label="Select token network"><option value="arc">Arc · Chain 5042</option><option value="ethereum">Ethereum · Chain 1</option><option value="robinhood">Robinhood Chain · Chain 4663</option></select><span id="networkNote">Results never mix token data from different networks.</span></div>
 <div class="search">
 <input id="address" aria-label="Token name, ticker or contract address" spellcheck="false" value="" placeholder="Token name, ticker or 0x contract address">
@@ -109,11 +187,44 @@ footer .source-link{margin-top:14px}footer .source-link a{color:#67dcf3;text-und
 </div>
 <div id="matches" class="results" hidden aria-live="polite"></div>
 <p id="state" role="status" aria-live="polite">Select a network, then search a token name, symbol, or contract. Name matches are not issuer verification.</p>
-<div id="asset"></div>
-<div id="identity" aria-live="polite"></div>
+</section>
+<section id="tokenDetail" hidden aria-label="Token research">
+  <div class="detail-toolbar">
+    <button id="backSearch" class="text-control" type="button">← Back to search</button>
+    <div>
+      <button id="copyLink" class="text-control" type="button">Copy research link ↗</button>
+      <span id="shareStatus" role="status" aria-live="polite"></span>
+    </div>
+  </div>
+  <div class="detail-hero">
+    <div class="detail-kicker">INDEPENDENT TOKEN RESEARCH · READ ONLY</div>
+    <div id="asset"></div>
+    <div id="identity" aria-live="polite"></div>
+    <div id="detailState" role="status" aria-live="polite">Select a token to scan source-backed data.</div>
+  </div>
+  <div id="quickFacts" class="detail-quick" aria-label="Key token metrics"></div>
+  <div class="chart-shell" aria-label="Price history status">
+    <h2>Price history</h2>
+    <p id="chartNote" class="chart-note">No exact-chain, contract-bound candle series verified for this token yet. We will never draw invented price history.</p>
+    <a id="marketLink" hidden target="_blank" rel="noopener noreferrer">View source-matched market ↗</a>
+  </div>
+<div class="research-intro">
+  <h2>Research, without the noise.</h2>
+  <p>Only contract-matched metrics. Open source evidence when you need it.</p>
+</div>
 <div id="evidenceCount" class="sourceCount" aria-live="polite"></div>
-<p class="buyers">Before buying: confirm the contract, review liquidity and holder concentration, check admin permissions and source-backed supply data. A verified contract is not a safety rating.</p>
-<div id="cards" class="grid"></div>
+<p class="buyers">Contract confirmation is not an investment safety rating. Missing evidence is never treated as proof of safety.</p>
+<details id="deepResearch" open>
+ <summary>Explore the full on-chain report · 20 checks</summary>
+ <div id="cards" class="grid"></div>
+</details>
+<div class="research-tools" aria-label="Further research">
+ <div class="research-tool"><h3>Before You Buy</h3><p id="beforeBuyNote">Review owner authority, mint permissions, trading taxes and liquidity permissions with exact-contract evidence.</p><div class="state">ONLY VERIFIED SIGNALS</div></div>
+ <div class="research-tool"><h3>Exit Reality</h3><p>Execution quotes and price impact require a verified routing and simulation engine. No guaranteed exit amounts are shown.</p><div class="state">SIMULATION NOT YET AVAILABLE</div></div>
+ <div class="research-tool"><h3>What Changed?</h3><p>Historical comparisons will use pinned, timestamped snapshots. We do not infer whale activity from incomplete wallet records.</p><div class="state">HISTORICAL COMPARISON PENDING</div></div>
+ <div class="research-tool"><h3>Claim vs Reality</h3><p>We compare first-party project claims with on-chain proof. Unsupported marketing claims will not become facts.</p><div class="state">SOURCE MATCHING IN PROGRESS</div></div>
+</div>
+</section>
 <footer>Evidence is token and network specific. NOT VERIFIED does not mean false or zero. This tool does not execute transactions or provide investment advice.<div class="source-link"><a href="https://github.com/arcycoin-glitch/arcy-search/tree/feature/three-chain-release-lab-20261011/eth-lab" target="_blank" rel="noopener noreferrer" aria-label="Inspect ARCY SEARCH source code on GitHub">GitHub · View source ↗</a></div></footer>
 </main>
 <script src="/schema.js"></script>

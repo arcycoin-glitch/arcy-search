@@ -215,6 +215,19 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
  .hero-mascot{margin-bottom:16px}
  .hero-mascot img{width:130px}
 }
+
+/* Original ARCY waving mascot video, with still-image fallback.
+   Motion and data-saving accessibility must take precedence over autoplay. */
+.hero-mascot{position:relative;isolation:isolate;max-width:176px}
+.hero-greeting-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;
+ pointer-events:none;transition:opacity .35s ease}
+.hero-mascot.greeting-playing .hero-greeting-video{opacity:1}
+.hero-mascot.greeting-playing>img{opacity:0}
+.hero-mascot>img{transition:opacity .35s ease}
+@media(max-width:550px){.hero-mascot{max-width:130px}}
+@media(prefers-reduced-motion:reduce){.hero-greeting-video{display:none!important}
+ .hero-mascot>img{opacity:1!important}}
+
 </style>
 </head>
 <body>
@@ -228,7 +241,7 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
 </header>
 <section id="discovery">
 <div class="hero">
-  <div class="hero-mascot" aria-label="Original ARCY owl mascot"><img src="/assets/hero-arcy.png" width="184" height="184" alt="ARCY's original blue-and-white owl mascot" decoding="async" fetchpriority="high"></div>
+  <div class="hero-mascot" aria-label="Original ARCY owl mascot"><img src="/assets/hero-arcy.png" width="184" height="184" alt="ARCY's original blue-and-white owl mascot" decoding="async" fetchpriority="high"><video class="hero-greeting-video" data-src="/assets/arcy-greeting.mp4" muted playsinline loop preload="none" aria-hidden="true"></video></div>
   <div class="eyebrow">ARCY · TOKEN INTELLIGENCE</div>
   <h2>Know what you're buying.</h2>
   <p>Three chains. One clear picture. Search any token, verify its contract, and research the evidence before you decide.</p>
@@ -298,6 +311,7 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
 </main>
 <script src="/schema.js"></script>
 <script src="/format.js"></script>
+<script src="/hero-greeting.js" defer></script>
 <script>
 'use strict';
 const definitions=window.ARCYEthLabSchema;

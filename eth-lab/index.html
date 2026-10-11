@@ -250,6 +250,12 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
 @media(max-width:550px){.candidate{flex-direction:row;align-items:center;padding:11px 12px}
  .candidate .scan-label{padding:0}.candidate-title{font-size:13px}
  .candidate-detail{gap:11px;min-width:0}.candidate-logo{width:42px;height:42px}}
+
+/* Compact token identity: logo is visual context, never proof of issuer. */
+#asset{position:relative;min-height:52px}
+#asset .token-title-logo{float:left;width:46px;height:46px;object-fit:contain;border-radius:50%;
+ background:#112a3a;border:1px solid rgba(133,197,216,.17);margin:4px 13px 5px 0}
+#asset:after{content:'';display:table;clear:both}
 </style>
 </head>
 <body>
@@ -546,7 +552,7 @@ function activateHome({push=false}={}){
  if(push&&location.pathname!=='/')history.pushState({},'','/');
  document.title='ARCY SEARCH — Research before you buy';
 }
-function activateDetail(address,network,{push=true,identity=null}={}){
+function activateDetail(address,network,{push=true,identity=null,logoUrl=null}={}){
  if(!EVM_ADDRESS.test(address)||!Object.hasOwn(NETWORKS,network))return;
  cancelPending();
  const canonical=tokenPath(network,address);
@@ -560,7 +566,7 @@ function activateDetail(address,network,{push=true,identity=null}={}){
  $('marketLink').hidden=true;$('chartPlot').hidden=true;$('chartPlot').replaceChildren();
  document.title='Token research · '+NETWORKS[network].label+' · ARCY SEARCH';
  window.scrollTo({top:0,behavior:'instant'});
- void scanAddress(address.toLowerCase(),network,searchVersion,identity);
+ void scanAddress(address.toLowerCase(),network,searchVersion,identity,logoUrl);
 }
 function restoreRoute(){
  const route=tokenRoute(location.pathname);
@@ -701,7 +707,7 @@ function requestController(){
 function baseUrl(route,params){
  return route+'?'+new URLSearchParams({...params,chain:selected()}).toString();
 }
-async function scanAddress(address,network=selected(),version=searchVersion,chosenIdentity=null){
+async function scanAddress(address,network=selected(),version=searchVersion,chosenIdentity=null,chosenLogo=null){
  const info=NETWORKS[network],button=$('go');
  if(!info)return;
  button.disabled=true;clearMatches();$('asset').replaceChildren();clearIdentity();render(null);
@@ -730,6 +736,15 @@ async function scanAddress(address,network=selected(),version=searchVersion,chos
   const block=document.createElement('span');
   block.textContent=' · Block '+BigInt(data.block).toString();
   container.append(title,explorer,block);
+  const verifiedLogo=displayLogo(chosenLogo,network,data.address);
+  if(verifiedLogo){
+   const art=document.createElement('img');
+   art.className='token-title-logo';art.src=verifiedLogo;
+   art.alt='Token artwork (not proof of issuer authenticity)';
+   art.decoding='async';art.referrerPolicy='no-referrer';
+   art.addEventListener('error',()=>art.remove(),{once:true});
+   container.prepend(art);
+  }
   if(data.tokenIdentity?.status==='REGISTRY_MATCHED'&&network==='robinhood'){
    const registry=document.createElement('div');
    registry.className='sub';
@@ -827,7 +842,7 @@ function showCandidates(data,network,version){
   option.append(detail,choose);
   option.addEventListener('click',()=>{
    if(version!==searchVersion||network!==selected())return;
-   activateDetail(item.address,network,{identity:item.identity});
+   activateDetail(item.address,network,{identity:item.identity,logoUrl:item.logoUrl});
   });
   return option;
  }

@@ -752,6 +752,13 @@ async function scanAddress(address,network=selected(),version=searchVersion,chos
   $('asset').replaceChildren();clearIdentity();render(null);$('quickFacts').replaceChildren();
  }finally{if(version===searchVersion&&network===selected()){button.disabled=false;if(activeController===controller)activeController=null}}
 }
+// Site-owned ARCY mascot is an on-site brand graphic, NOT issuer verification.
+const ARCY_OFFICIAL_PROJECT_CONTRACT='0x73e5f588d27d6b5ec89c89c82692d1e7fecbd38b';
+function displayLogo(raw,network,address){
+ if(network==='arc'&&typeof address==='string'&&
+  address.toLowerCase()===ARCY_OFFICIAL_PROJECT_CONTRACT)return '/assets/hero-arcy.png';
+ return safeCandidateImage(raw);
+}
 function safeCandidateImage(raw){
  if(typeof raw!=='string'||raw.length>500)return null;
  try{
@@ -790,7 +797,7 @@ function showCandidates(data,network,version){
   const art=document.createElement('span');art.className='candidate-logo';
   const initials=String(item.symbol||item.name||'?').replace(/[^a-z0-9]/gi,'').slice(0,2).toUpperCase()||'?';
   art.textContent=initials;
-  const logo=safeCandidateImage(item.logoUrl);
+  const logo=displayLogo(item.logoUrl,network,item.address);
   if(logo){
    const img=document.createElement('img');
    img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';

@@ -97,6 +97,9 @@ function createEngine(adapters){
      symbol:typeof item.symbol==='string'?item.symbol.slice(0,30):'',
      address,chainId:cfg.chainId,network:cfg.id,
      source:typeof item.source==='string'?item.source.slice(0,100):'Unverified search catalog',
+     catalogCoinId:cfg.id==='ethereum'&&item.source==='CoinGecko'&&
+       typeof item.catalogCoinId==='string'&&/^[a-z0-9-]{2,100}$/.test(item.catalogCoinId)?
+       item.catalogCoinId:null,
      registryMatched:cfg.id==='robinhood'&&item.registryMatched===true&&
       item.source==='Robinhood official asset registry'});
     if(safe.length===12)break;

@@ -5,6 +5,13 @@
 const ADDRESS=/^0x[0-9a-f]{40}$/i;
 const {safeLogoUrl}=require('./token-image');
 const OFFICIAL=Object.freeze([
+ // First-party ARCY contract from the existing official website repository.
+ // Do not apply this identity to other Arc lookalikes or other EVM chains.
+ Object.freeze({
+  network:'arc',chainId:5042,address:'0x73e5f588d27d6b5ec89c89c82692d1e7fecbd38b',
+  name:'ARCY',symbol:'ARCY',issuer:'ARCY',
+  proofUrl:'https://github.com/arcycoin-glitch/arcy-website/blob/main/test/live.cjs'
+ }),
  Object.freeze({
   network:'ethereum',chainId:1,address:'0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
   name:'USD Coin',symbol:'USDC',issuer:'Circle',

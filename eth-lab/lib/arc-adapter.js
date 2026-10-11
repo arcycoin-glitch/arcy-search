@@ -79,10 +79,34 @@ async function supply(address){
   fields:{totalSupply:total,circulatingSupply:UNKNOWN('Verified Arc circulating supply is not yet integrated.','ARC_CIRCULATION_NOT_VERIFIED'),
   burnAddressBalance:burned,burnAddressPct:pct}};
 }
-function holderFields(){
- return {description:'Complete verified Arc holder publication adapter is pending migration.',
-  fields:Object.fromEntries(['holderCount','largestWalletPct','top10Pct','top20Pct'].map(k=>
-   [k,UNKNOWN('No complete chain-verified holder ranking has been imported into this test adapter.','ARC_HOLDER_NOT_INTEGRATED')]))};
+async function holderFields(address){
+ // Use only archived COMPLETE records verified by the original Arc publication
+ // validator. Never enqueue a background job or call Redis on interactive search.
+ const keys=['holderCount','largestWalletPct','top10Pct','top20Pct'];
+ let snapshot=null;
+ try{snapshot=await require('../arc-legacy/lib/holder-publication').read(address)}
+ catch{}
+ if(!snapshot||snapshot.coverage?.complete!==true||
+   snapshot.status!=='ONCHAIN_VERIFIED'||snapshot.address!==address||
+   !/^0x[0-9a-f]+$/i.test(snapshot.block||'')||
+   !Number.isFinite(Date.parse(snapshot.snapshot?.completedAt)))
+  return {description:'No verified COMPLETE historical Arc holder publication is available for this contract.',
+   fields:Object.fromEntries(keys.map(k=>[k,UNKNOWN('No archived COMPLETE and valid Arc holder publication for this contract.','ARC_HOLDER_ARCHIVE_UNAVAILABLE')]))};
+ const completedAt=snapshot.snapshot.completedAt;
+ const fields=Object.fromEntries(keys.map(k=>{
+  const old=snapshot.fields?.[k];
+  if(!old||old.value===null||old.value===undefined||old.status!=='ONCHAIN_VERIFIED'||
+    typeof old.value!=='number'||!Number.isFinite(old.value))
+   return [k,UNKNOWN('Archived holder metric did not pass source validation.','ARC_HOLDER_METRIC_UNAVAILABLE')];
+  return [k,{value:old.value,source:'Arc RPC (historical COMPLETE snapshot)',
+   network:cfg.id,chainId:cfg.chainId,status:'LAST_VERIFIED',dataState:'DATA_FOUND',
+   snapshot:{completedAt,block:snapshot.block,freshness:'HISTORICAL'},
+   evidence:[{chainId:cfg.chainId,network:cfg.id,address,block:snapshot.block,
+    observedAt:completedAt,source:'Arc RPC',
+    scope:'Historical COMPLETE and supply-reconciled holder population at the recorded block; NOT the present block.'}]}];
+ }));
+ return {description:'HISTORICAL Arc holders: last complete verified snapshot '+completedAt+
+  '. Concentration is NOT a live reading.',fields};
 }
 async function marketFields(address,cardId){
  let result;
@@ -118,10 +142,10 @@ async function contractFields(address,block){
 }
 async function inspectCard({address,base,cardId}){
  if(cardId==='supply')return supply(address);
- if(cardId==='holders')return holderFields();
+ if(cardId==='holders')return holderFields(address);
  if(cardId==='liquidity'||cardId==='activity')return marketFields(address,cardId);
  if(cardId==='mechanics')return contractFields(address,base.block);
  return null;
 }
 async function discover({query}){return market.discover(query)}
-module.exports={inspectToken,inspectCard,discover,legacyRead,supply};
+module.exports={inspectToken,inspectCard,discover,legacyRead,supply,holderFields};

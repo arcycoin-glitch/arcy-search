@@ -37,3 +37,13 @@ test('only one main token appears by default with alternative contracts in expan
  assert.match(html,/candidates\.find\(item=>official\(item\)&&exact\(item\)\)/);
  assert.match(html,/docs\.ondo\.foundation/);
 });
+
+test('unknown tickers show all safely illustrated candidates, verified issuers collapse alternatives',()=>{
+ assert.match(html,/if\(trustedMain\)\{/);
+ assert.match(html,/const list=document\.createElement\('div'\);list\.className='candidate-list'/);
+ assert.match(html,/for\(const candidate of candidates\)list\.append\(candidateElement\(candidate\)\)/);
+ assert.match(html,/const img=document\.createElement\('img'\)/);
+ assert.match(html,/img\.referrerPolicy='no-referrer'/);
+ assert.match(html,/const logo=safeCandidateImage\(item\.logoUrl\)/);
+ assert.match(html,/Logo is not proof of identity/);
+});

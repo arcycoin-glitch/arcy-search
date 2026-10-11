@@ -54,10 +54,11 @@ function knownMatches(network,query){
  if(typeof query!=='string')return [];
  const q=query.normalize('NFKC').trim().toLocaleLowerCase('en-US');
  if(q.length<2)return [];
- return OFFICIAL.filter(x=>x.network===network&&(
-  x.symbol.toLowerCase()===q||x.name.toLowerCase()===q||
-  x.symbol.toLowerCase().startsWith(q)||x.name.toLowerCase().startsWith(q)
- )).map(x=>({address:x.address,network:x.network,chainId:x.chainId,
+ const inNetwork=OFFICIAL.filter(x=>x.network===network);
+ const exact=inNetwork.filter(x=>x.symbol.toLowerCase()===q||x.name.toLowerCase()===q);
+ const matches=exact.length?exact:inNetwork.filter(x=>
+  x.symbol.toLowerCase().startsWith(q)||x.name.toLowerCase().startsWith(q));
+ return matches.map(x=>({address:x.address,network:x.network,chainId:x.chainId,
   name:x.name,symbol:x.symbol,source:'Official issuer contract documentation',
   identity:verified(network,x.address),identityVerified:true}));
 }

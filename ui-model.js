@@ -23,10 +23,12 @@
    if(Math.abs(n)<divisor)continue;
    const scaled=n/divisor;
    const formatted=conciseNumber(scaled);
-   if(Math.abs(scaled)<1000&&Math.abs(Number(formatted.replace(/,/g,'')))>=1000&&i>0)continue;
+   if(Math.abs(scaled)<1000&&Math.abs(Number(formatted.replace(/,/g,'')))>=1000&&i>0)return conciseNumber(n/units[i-1][0])+units[i-1][1];
    return formatted+suffix;
   }
-  return conciseNumber(n);
+  const formatted=conciseNumber(n);
+  if(Math.abs(n)<1000&&Math.abs(Number(formatted.replace(/,/g,'')))>=1000)return n<0?'-1K':'1K';
+  return formatted;
  }
  const money=v=>'$'+compact(v);
  function get(obj,path){let value=obj;for(const k of path.split('.')){if(!value||!Object.hasOwn(value,k))return {exists:false};value=value[k];}return {exists:true,value};}

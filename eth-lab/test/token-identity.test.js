@@ -140,3 +140,26 @@ test('PAX Gold is only official for exact Paxos Ethereum contract address',()=>{
  assert.equal(list[0].identity.status,'OFFICIAL_CONTRACT_MATCHED');
  assert.equal(list[1].identity.status,'NOT_VERIFIED');
 });
+
+
+test('ARCY official label belongs only to first-party Arc 5042 token, never lookalikes',()=>{
+ const ARCY='0x73e5f588d27d6b5ec89c89c82692d1e7fecbd38b';
+ const clone='0x'+('a'.repeat(40));
+ const original=verified('arc',ARCY);
+ assert.equal(original.status,'OFFICIAL_CONTRACT_MATCHED');
+ assert.equal(original.chainId,5042);
+ assert.equal(original.issuer,'ARCY');
+ assert.match(original.proofUrl,/arcy-website\/blob\/main\/test\/live\.cjs/);
+ assert.equal(verified('ethereum',ARCY),null);
+ assert.equal(verified('robinhood',ARCY),null);
+ assert.equal(verified('arc',clone),null);
+ const rows=rank('arc','ARCY',[
+  {network:'arc',chainId:5042,address:clone,name:'ARCY',symbol:'ARCY',logoUrl:'https://cdn.dexscreener.com/token-images/fake.png',source:'DexScreener'},
+  {network:'arc',chainId:5042,address:ARCY,name:'Misleading display name',symbol:'ARCY',source:'DexScreener'}
+ ]);
+ assert.equal(rows[0].address,ARCY);
+ assert.equal(rows[0].name,'ARCY');
+ assert.equal(rows[0].identity.status,'OFFICIAL_CONTRACT_MATCHED');
+ assert.equal(rows[1].address,clone);
+ assert.equal(rows[1].identity.status,'NOT_VERIFIED');
+});

@@ -11,7 +11,16 @@ const CHAIN_CONFIG=Object.freeze({
   goPlusChainId:1,
   stockTokenRegistry:null
  }),
- robinhood:Object.freeze({
+ arc:Object.freeze({
+  id:'arc',label:'Arc',chainId:5042,rpcEnv:'ARC_RPC_URL',
+  publicRpc:'https://rpc.mainnet.arc.io',
+  explorer:'https://explorer.arc.io',
+  blockscoutTokens:null,
+  dexScreenerChainId:'arc',
+  goPlusChainId:null,
+  stockTokenRegistry:null
+ }),
+  robinhood:Object.freeze({
   id:'robinhood',label:'Robinhood Chain',chainId:4663,rpcEnv:'ROBINHOOD_RPC_URL',
   publicRpc:'https://rpc.mainnet.chain.robinhood.com',
   explorer:'https://robinhoodchain.blockscout.com',

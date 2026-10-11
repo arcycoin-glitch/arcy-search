@@ -56,6 +56,11 @@ footer{font-size:12px;color:#7f99a8;margin-top:32px}
 .missingGroup summary{cursor:pointer;font-size:12px;color:#d4b58a}
 .missingGroup .metric{font-size:12px}
 .card .noSource{font-size:12px;color:#b1c8d8;padding:10px 0}
+.exactValue{margin-top:5px;color:#83b4cb;font-size:11px}
+.exactValue summary{cursor:pointer;list-style:none;user-select:none}
+.exactValue summary:before{content:'▸ ';font-size:10px}
+.exactValue[open] summary:before{content:'▾ '}
+.exactNumber{margin-top:5px;color:#deeff8;overflow-wrap:anywhere;user-select:text;font-weight:400;line-height:1.5}
 .card .statusLine{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .proofTag{display:block;font-size:12px;font-weight:700;color:#7af3c2;margin-top:8px}
 .candidate .candidate-badge{display:inline-block;border-radius:6px;border:1px solid #408e7a;background:#163b32;color:#8ef6c9;padding:4px 8px;font-size:11px;font-weight:800;margin-top:6px}
@@ -97,6 +102,7 @@ footer{font-size:12px;color:#7f99a8;margin-top:32px}
 <footer>Evidence is token and network specific. NOT VERIFIED does not mean false or zero. This tool does not execute transactions or provide investment advice.</footer>
 </main>
 <script src="/schema.js"></script>
+<script src="/format.js"></script>
 <script>
 'use strict';
 const definitions=window.ARCYEthLabSchema;
@@ -104,22 +110,9 @@ const definitions=window.ARCYEthLabSchema;
 const buyerOrder=['liquidity','holders','mechanics','supply','activity'];
 const displayDefinitions=[...definitions].sort((a,b)=>buyerOrder.indexOf(a.id)-buyerOrder.indexOf(b.id));
 const $=id=>document.getElementById(id);
-function format(value,key,kind){
-  if(typeof value==='boolean')return value?'TRUE':'FALSE';
-  const prefix=kind?kind+' ':'';
-  const percent=/^(change24h|largestWalletPct|top10Pct|top20Pct|burnAddressPct)$/.test(key);
-  const usd=/^(liquidityUsd|volume24h|valuation|priceUsd)$/.test(key);
-  let formatted;
-  if(typeof value==='number'&&Number.isFinite(value)){
-    formatted=percent&&value>0&&value<0.00000001?value.toExponential(3):value.toLocaleString('en-US',{maximumFractionDigits:percent?10:usd&&key!=='priceUsd'?2:12});
-  }else if(typeof value==='string'&&/^-?\d+(?:\.\d+)?$/.test(value)){
-    const parts=value.split('.');
-    formatted=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',')+(parts[1]!==undefined?'.'+parts[1]:'');
-  }else{
-    return prefix+String(value);
-  }
-  return prefix+(usd?'$':'')+formatted+(percent?'%':'');
-}
+const metricFormat=window.ARCYMetricFormat;
+if(!metricFormat||typeof metricFormat.display!=='function'||typeof metricFormat.full!=='function')
+ throw Error('Metric formatter unavailable');
 function shortReason(field){
  if(!field)return 'This metric has not been scanned.';
  const code=field.reasonCode||'';
@@ -177,9 +170,23 @@ function render(report){
       const value=document.createElement('b');
       const missing=!data||data.value===null||data.value===undefined;
       value.className=missing?'no':'';
-      value.textContent=!report?'—':missing?'NOT VERIFIED':format(data.value,key,key==='valuation'?data.kind:null);
+      const kind=key==='valuation'?data?.kind:null;
+      const displayed=!report?'—':missing?'NOT VERIFIED':metricFormat.display(data.value,key,kind);
+      value.textContent=displayed;
       value.title=data?.reason||data?.source||'';
       result.append(value);
+      if(report&&!missing){
+       const exact=metricFormat.full(data.value,key,kind);
+       if(exact!==displayed){
+        // The rounded display is only a presentation. Original evidence is preserved.
+        const disclosure=document.createElement('details');disclosure.className='exactValue';
+        const show=document.createElement('summary');show.textContent='Full value';
+        const raw=document.createElement('div');raw.className='exactNumber';raw.textContent=exact;
+        disclosure.append(show,raw);
+        result.append(disclosure);
+        value.title='Full value: '+exact;
+       }
+      }
       if(report&&missing){
        const why=document.createElement('div');why.className='reason';
        why.textContent=shortReason(data);

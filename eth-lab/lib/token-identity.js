@@ -45,7 +45,10 @@ const OFFICIAL=Object.freeze([
   proofUrl:'https://shib.io/developers'}),
  Object.freeze({network:'ethereum',chainId:1,address:'0xfaba6f8e4a5e8ab82f62fe7c39859fa577269be3',
   name:'Ondo',symbol:'ONDO',issuer:'Ondo Foundation',
-  proofUrl:'https://docs.ondo.foundation/ondo-token'})
+  proofUrl:'https://docs.ondo.foundation/ondo-token'}),
+ Object.freeze({network:'ethereum',chainId:1,address:'0x45804880de22913dafe09f4980848ece6ecbaf78',
+  name:'PAX Gold',symbol:'PAXG',issuer:'Paxos',
+  proofUrl:'https://paxos.com/wp-content/uploads/2019/09/PAX-Gold-Whitepaper.pdf'})
 ]);
 function verified(network,address){
  if(typeof network!=='string'||typeof address!=='string'||!ADDRESS.test(address))return null;

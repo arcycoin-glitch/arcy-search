@@ -44,6 +44,6 @@ test('non-numeric permissions, addresses, pool descriptions and zeros retain mea
  assert.equal(display('owner() getter: 0xabc','ownerAdmin'),'owner() getter: 0xabc');
  assert.equal(display(false,'mintCapability'),'FALSE');
  assert.equal(display(0,'volume24h'),'$0');
- assert.equal(display('-1250000','volume24h'),'-$1.25M'.replace('-$',' $').trim().replace(' $','$-')); // negative amount shown after $ by design
+ assert.equal(display('-1250000','volume24h'),'-$1.25M');
  assert.equal(compactNumeric('NaN'),null);
 });

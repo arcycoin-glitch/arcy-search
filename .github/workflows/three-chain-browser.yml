@@ -1,0 +1,30 @@
+name: Three-Chain Chromium browser acceptance
+on:
+  push:
+    branches: [feature/three-chain-release-lab-20261011]
+    paths:
+      - '.github/workflows/three-chain-browser.yml'
+      - 'eth-lab/scripts/browser-three-chain.cjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: eth-lab
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install a temporary Chromium test driver
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Install Chromium
+        run: npx playwright install chromium --with-deps
+      - name: Run responsive and multichain isolation acceptance
+        run: node scripts/browser-three-chain.cjs

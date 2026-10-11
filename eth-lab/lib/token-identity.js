@@ -23,7 +23,25 @@ const OFFICIAL=Object.freeze([
   network:'ethereum',chainId:1,address:'0xdac17f958d2ee523a2206206994597c13d831ec7',
   name:'Tether USD',symbol:'USDT',issuer:'Tether',
   proofUrl:'https://tether.to/en/supported-protocols/'
- })
+ }),
+ Object.freeze({network:'ethereum',chainId:1,address:'0x6b175474e89094c44da98b954eedeac495271d0f',
+  name:'Dai Stablecoin',symbol:'DAI',issuer:'Sky / Maker',
+  proofUrl:'https://github.com/sky-ecosystem/developerguides/blob/master/dai/dai-token/dai-token.md'}),
+ Object.freeze({network:'ethereum',chainId:1,address:'0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
+  name:'Wrapped BTC',symbol:'WBTC',issuer:'WBTC',
+  proofUrl:'https://www.wbtc.network/transparency'}),
+ Object.freeze({network:'ethereum',chainId:1,address:'0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce',
+  name:'Shiba Inu',symbol:'SHIB',issuer:'Shiba Inu',
+  proofUrl:'https://shib.io/developers'}),
+ Object.freeze({network:'ethereum',chainId:1,address:'0x9813037ee2218799597d83d4a5b6f3b6778218d9',
+  name:'Bone ShibaSwap',symbol:'BONE',issuer:'Shiba Inu',
+  proofUrl:'https://shib.io/developers'}),
+ Object.freeze({network:'ethereum',chainId:1,address:'0x27c70cd1946795b66be9d954418546998b546634',
+  name:'Doge Killer',symbol:'LEASH',issuer:'Shiba Inu',
+  proofUrl:'https://shib.io/developers'}),
+ Object.freeze({network:'ethereum',chainId:1,address:'0xa02c49da76a085e4e1ee60a6b920ddbc8db599f4',
+  name:'Shiba Inu TREAT',symbol:'TREAT',issuer:'Shiba Inu',
+  proofUrl:'https://shib.io/developers'})
 ]);
 function verified(network,address){
  if(typeof network!=='string'||typeof address!=='string'||!ADDRESS.test(address))return null;

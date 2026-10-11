@@ -15,10 +15,20 @@
   if(typeof value!=='number'&&typeof value!=='string')return null;
   if(typeof value==='number'&&!Number.isFinite(value))return null;
   let raw=String(value).trim();
-  // Numbers from JSON can contain exponent notation. Preserve evidence
-  // instead of inventing high-precision digits from a floating-point value.
-  if(!NUMERIC.test(raw)&&typeof value==='number'&&Number.isFinite(value))
-   raw=value.toLocaleString('en-US',{useGrouping:false,maximumFractionDigits:20});
+  // Expand scientific notation without rounding away tiny non-zero values.
+  // Display-only: the original unmodified evidence object remains available.
+  if(!NUMERIC.test(raw)&&typeof value==='number'){
+   const m=/^([+-]?)(\d+)(?:\.(\d+))?[eE]([+-]?\d+)$/.exec(raw);
+   if(m){
+    const digits=m[2]+(m[3]||'');
+    const position=m[2].length+Number(m[4]);
+    if(position>0&&position<400)
+     raw=m[1]+(position>=digits.length?digits+'0'.repeat(position-digits.length):
+      digits.slice(0,position)+'.'+digits.slice(position));
+    else if(position<=0&&position>-400)
+     raw=m[1]+'0.'+'0'.repeat(-position)+digits;
+   }
+  }
   const match=NUMERIC.exec(raw);
   return match?{negative:match[1]==='-',whole:match[2].replace(/^0+(?=\d)/,''),fraction:match[3]||'',raw}:null;
  }

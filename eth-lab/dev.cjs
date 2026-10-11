@@ -14,7 +14,11 @@
  }
  res.setHeader('Content-Length',size);fs.createReadStream(file).pipe(res);return;
 }
-if(url.pathname==='/hero-greeting.js'){
+if(url.pathname==='/home-pulse.js'||url.pathname==='/home-sections.css'){
+ res.setHeader('Content-Type',url.pathname.endsWith('.css')?'text/css; charset=utf-8':'text/javascript; charset=utf-8');
+ res.setHeader('X-Content-Type-Options','nosniff');
+ fs.createReadStream(path.join(__dirname,url.pathname.slice(1))).pipe(res);return
+}if(url.pathname==='/hero-greeting.js'){
  res.setHeader('Content-Type','text/javascript; charset=utf-8');res.setHeader('X-Content-Type-Options','nosniff');
  fs.createReadStream(path.join(__dirname,'hero-greeting.js')).pipe(res);return
 }if(url.pathname==='/schema.js'||url.pathname==='/format.js'){res.setHeader('Content-Type','text/javascript; charset=utf-8');res.setHeader('X-Content-Type-Options','nosniff');fs.createReadStream(path.join(__dirname,url.pathname==='/schema.js'?'schema.js':'format.js')).pipe(res);return}if(url.pathname!=='/'&&!/^\/token\/(arc|ethereum|robinhood)\/0x[0-9a-fA-F]{40}\/?$/.test(url.pathname)){res.writeHead(404);res.end('Not found');return}res.setHeader('Content-Type','text/html');fs.createReadStream(path.join(__dirname,'index.html')).pipe(res)}).listen(Number(process.env.PORT)||3001,'127.0.0.1',()=>console.log('ETH Lab listening on port '+(process.env.PORT||3001)));

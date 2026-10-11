@@ -7,6 +7,11 @@ const {safeLogoUrl}=require('./token-image');
 const {chain}=require('./chains');
 const OFFICIAL=Object.freeze([
  Object.freeze({
+  network:'arc',chainId:5042,address:'0x73e5f588d27d6b5ec89c89c82692d1e7fecbd38b',
+  name:'Arcy',symbol:'ARCY',issuer:'ARCY',
+  proofUrl:'https://www.arcyusdc.xyz/'
+ }),
+ Object.freeze({
   network:'ethereum',chainId:1,address:'0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
   name:'USD Coin',symbol:'USDC',issuer:'Circle',
   proofUrl:'https://developers.circle.com/stablecoins/usdc-contract-addresses'

@@ -104,3 +104,23 @@ test('unattributed CoinGecko mention without validated coin id cannot be indexed
  const m=rank('ethereum','PEPE',[{network:'ethereum',chainId:1,address:CLONE,source:'CoinGecko',name:'Pepe',symbol:'PEPE'}]);
  assert.equal(m[0].identity.status,'NOT_VERIFIED');
 });
+
+test('ONDO issuer documentation proves the exact Ethereum governance contract',()=>{
+ const ONDO='0xfaba6f8e4a5e8ab82f62fe7c39859fa577269be3';
+ const official=verified('ethereum',ONDO);
+ assert.equal(official?.status,'OFFICIAL_CONTRACT_MATCHED');
+ assert.equal(official?.issuer,'Ondo Foundation');
+ assert.equal(official?.proofUrl,'https://docs.ondo.foundation/ondo-token');
+ assert.equal(verified('robinhood',ONDO),null);
+ assert.equal(verified('ethereum',CLONE),null);
+ assert.deepEqual(knownMatches('ethereum','ONDO').map(x=>x.address),[ONDO]);
+ const candidates=rank('ethereum','ONDO',[
+  {network:'ethereum',chainId:1,address:CLONE,name:'Ondo',symbol:'ONDO',source:'DexScreener'},
+  {network:'ethereum',chainId:1,address:ONDO,name:'Ondo',symbol:'ONDO',source:'CoinGecko',catalogCoinId:'ondo-finance'},
+  {network:'ethereum',chainId:1,address:'0x96f6ef951840721adbf46ac996b59e0235cb985c',name:'Ondo US Dollar Yield',symbol:'USDY',source:'CoinGecko',catalogCoinId:'ondo-us-dollar-yield'}
+ ]);
+ assert.equal(candidates[0].address,ONDO);
+ assert.equal(candidates[0].identity.status,'OFFICIAL_CONTRACT_MATCHED');
+ assert.equal(candidates[1].identityVerified,false);
+ assert.equal(candidates[2].identity.status,'NOT_VERIFIED');
+});

@@ -256,6 +256,22 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
 #asset .token-title-logo{float:left;width:46px;height:46px;object-fit:contain;border-radius:50%;
  background:#112a3a;border:1px solid rgba(133,197,216,.17);margin:4px 13px 5px 0}
 #asset:after{content:'';display:table;clear:both}
+
+/* Source-backed single-section ARCY Burn, without turning the home into a dashboard. */
+.home-section{margin:clamp(72px,12vw,156px) auto 42px;padding:31px 0;border-top:1px solid rgba(135,198,221,.17);max-width:980px}
+.section-kicker{font-size:10px;letter-spacing:.21em;font-weight:730;color:#76c9de;text-transform:uppercase}
+.home-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:12px 0 10px}
+.home-heading h2{font-size:clamp(23px,3vw,32px);letter-spacing:-.045em;margin:0}
+.home-heading a{font-size:12px;color:#81cede;text-underline-offset:4px}
+.section-lead{color:#91aebc;font-size:12px;line-height:1.8;max-width:680px;margin:5px 0 25px}
+.burn-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.burn-facts>div{padding:20px 19px;background:#0b1e2c;border:1px solid rgba(128,191,209,.17);border-radius:15px}
+.burn-facts span{display:block;font-size:11px;color:#98b7c5;margin-bottom:12px}
+.burn-facts strong{font-size:clamp(18px,2.7vw,26px);letter-spacing:-.035em;overflow-wrap:anywhere;font-weight:730}
+.section-status{margin:16px 0;font-size:11px;color:#829faf;line-height:1.65}
+@media(max-width:650px){.burn-facts{grid-template-columns:1fr 1fr;gap:9px}
+ .burn-facts>div{padding:14px}.burn-facts strong{font-size:20px}
+ .burn-facts>div:last-child{grid-column:1/-1}}
 </style>
 </head>
 <body>
@@ -294,6 +310,18 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
 </div>
 <div id="matches" class="results" hidden aria-live="polite"></div>
 <p id="state" role="status" aria-live="polite">Select a network, then search a token name, symbol, or contract. Name matches are not issuer verification.</p>
+<section class="home-section burn-home" id="arcyBurn" aria-labelledby="burnHeading">
+ <div class="section-kicker">ARCY · TRANSPARENT TOKEN DATA</div>
+ <div class="home-heading"><h2 id="burnHeading">Buyback & Burn</h2>
+  <a href="/token/arc/0x73e5f588d27d6b5ec89c89c82692d1e7fecbd38b">Explore ARCY on-chain ↗</a></div>
+ <p class="section-lead">Verified on-chain supply and current burn-address custody. A balance in a burn address does not prove when or how a buyback occurred.</p>
+ <div class="burn-facts">
+  <div><span>Total supply</span><strong id="burnSupply">—</strong></div>
+  <div><span>Burn-address balance</span><strong id="burnHeld">—</strong></div>
+  <div><span>Burn-address share</span><strong id="burnShare">—</strong></div>
+ </div>
+ <p class="section-status" id="burnProof" role="status" aria-live="polite">Checking signed chain-specific evidence when this section is visible…</p>
+</section>
 </section>
 <section id="tokenDetail" hidden aria-label="Token research">
   <div class="detail-toolbar">
@@ -629,6 +657,44 @@ async function loadVerifiedChart(address,network,version){
   $('chartNote').textContent='No reliable exact-contract historical chart available. We do not invent price movement.';
  }
 }
+async function loadBurnSummary(){
+ const known='0x73e5f588d27d6b5ec89c89c82692d1e7fecbd38b';
+ const proof=$('burnProof');
+ try{
+  const reply=await fetch('/api/token?'+new URLSearchParams({chain:'arc',address:known}),{cache:'no-store'});
+  if(!reply.ok)throw Error('Arc source unavailable');
+  const body=await reply.json();
+  if(body.ok!==true||body.network!=='arc'||body.chainId!==5042||
+   String(body.address).toLowerCase()!==known||!/^0x[0-9a-f]+$/i.test(body.block||''))throw Error('Wrong chain or contract');
+  const fields=body.fields||{};
+  const values=[
+   ['burnSupply',fields.totalSupply,'totalSupply'],
+   ['burnHeld',fields.burnAddressBalance,'burnAddressBalance'],
+   ['burnShare',fields.burnAddressPct,'burnAddressPct']
+  ];
+  let verified=0;
+  for(const [element,field,key] of values){
+   const match=field?.dataState==='DATA_FOUND'&&field.value!==null&&field.value!==undefined&&
+    field.chainId===5042&&field.network==='arc'&&Array.isArray(field.evidence)&&field.evidence.length>0;
+   $(''+element).textContent=match?metricFormat.display(field.value,key):'NOT VERIFIED';
+   if(match)verified++;
+  }
+  proof.textContent=verified+'/3 source-backed metrics · Arc 5042 · Pinned block '+BigInt(body.block).toString()+
+   ' · Current burn-address balances are NOT proof of lifetime buybacks or burned transactions.';
+ }catch{
+  for(const id of ['burnSupply','burnHeld','burnShare'])$(id).textContent='NOT VERIFIED';
+  proof.textContent='Arc supply evidence temporarily unavailable. We never substitute estimated burn values.';
+ }
+}
+function observeBurnSection(){
+ const section=$('arcyBurn');
+ let started=false;
+ const observer=new IntersectionObserver(entries=>{
+  if(started||!entries.some(e=>e.isIntersecting))return;
+  started=true;observer.disconnect();void loadBurnSummary();
+ },{rootMargin:'150px'});
+ observer.observe(section);
+}
 function renderQuickFacts(report){
  const summary=[
   ['PRICE',report.cards?.activity?.fields?.priceUsd,'priceUsd'],
@@ -919,6 +985,7 @@ $('copyLink').addEventListener('click',async()=>{
 });
 window.addEventListener('popstate',restoreRoute);
 initializeNetworkPicker();
+observeBurnSection();
 restoreRoute();
 
 </script>

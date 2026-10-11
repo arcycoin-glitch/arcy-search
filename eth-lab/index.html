@@ -174,6 +174,35 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
 .chart-shell .chart-note{margin:8px 0 12px}
 .chart-shell[aria-busy="true"]{opacity:.95}
 @media(max-width:550px){.price-canvas{height:166px}}
+
+/* Branded network dropdown. Never invokes a native bright mobile select sheet. */
+.network-picker{position:relative;min-width:250px;z-index:45}
+.network .network-label{letter-spacing:.13em;font-weight:750;color:#94c1d0;font-size:10px}
+.network-trigger{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;
+ padding:7px 13px;background:#0a2434;color:#e8f7fd;border:1px solid #2b6075;border-radius:12px;
+ font:inherit;font-size:13px;font-weight:650;text-align:left;cursor:pointer;transition:border-color .18s,background .18s}
+.network-trigger:hover,.network-trigger[aria-expanded="true"]{background:#103145;border-color:#5ac6df}
+.network-trigger:focus-visible,.chain-option:focus-visible{outline:2px solid #7de0f4;outline-offset:2px}
+.network-trigger-name{flex:1}
+.chain-chevron{width:17px;height:17px;color:#9dbfcc;transition:transform .18s}
+.network-trigger[aria-expanded="true"] .chain-chevron{transform:rotate(180deg)}
+.chain-mark{display:inline-grid;place-items:center;flex:none;width:30px;height:30px;border-radius:9px;
+ background:#102d40;color:#bfeeff;border:1px solid rgba(94,180,212,.2)}
+.chain-mark svg{width:22px;height:22px;display:block}
+.chain-mark.chain-robinhood{color:#28d78a}
+.network-menu{position:absolute;top:calc(100% + 7px);left:0;right:0;padding:6px;
+ border:1px solid #326f86;border-radius:15px;background:#0a2536;color:#ecf8ff;
+ box-shadow:0 16px 44px rgba(0,3,10,.52);max-height:min(300px,58vh);overflow-y:auto;overscroll-behavior:contain}
+.network-menu[hidden]{display:none!important}
+.chain-option{display:flex;gap:13px;align-items:center;width:100%;min-height:54px;padding:8px 10px;
+ border:0;border-radius:9px;color:#e6f6ff;background:transparent;font:inherit;font-size:13px;font-weight:650;text-align:left;cursor:pointer}
+.chain-option>span:nth-child(2){flex:1}
+.chain-option:hover,.chain-option:focus-visible{background:#103a50}
+.chain-option[aria-selected="true"]{background:#104052;color:#fff}
+.chain-check{width:16px;height:16px;flex:none;border-radius:50%;border:1.5px solid #7298aa}
+.chain-option[aria-selected="true"] .chain-check{border:4px solid #63d8ee;background:#082a3a;box-shadow:0 0 0 1px #63d8ee}
+@media(max-width:550px){.network-picker{width:100%;min-width:0}.network-menu{z-index:55}.network-trigger{min-height:54px}}
+
 </style>
 </head>
 <body>
@@ -191,7 +220,20 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
   <h2>Know what you're buying.</h2>
   <p>Three chains. One clear picture. Search any token, verify its contract, and research the evidence before you decide.</p>
 </div>
-<div class="network"><label for="chain">NETWORK</label><select id="chain" aria-label="Select token network"><option value="arc">Arc · Chain 5042</option><option value="ethereum">Ethereum · Chain 1</option><option value="robinhood">Robinhood Chain · Chain 4663</option></select><span id="networkNote">Results never mix token data from different networks.</span></div>
+<div class="network"><span class="network-label">NETWORK</span>
+<div class="network-picker" id="networkPicker">
+  <input type="hidden" id="chain" value="arc">
+  <button type="button" id="chainTrigger" class="network-trigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="chainMenu" aria-label="Select token network">
+    <span id="currentChainLogo" class="chain-mark chain-arc"><svg viewBox="0 0 40 40" aria-hidden="true" focusable="false"><path d="M5 28c1.2-10.7 7.5-17.5 15-17.5S33.8 17.3 35 28" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/><path d="M11 30c2.4-6.8 5.4-9.4 9-9.4s6.6 2.6 9 9.4" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></span>
+    <span id="currentChainName" class="network-trigger-name">Arc</span>
+    <svg class="chain-chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <div class="network-menu" id="chainMenu" role="listbox" aria-label="Token network" hidden>
+    <button type="button" class="chain-option" role="option" data-chain="arc" aria-selected="true" id="chainOptionArc"><span class="chain-mark chain-arc"><svg viewBox="0 0 40 40" aria-hidden="true" focusable="false"><path d="M5 28c1.2-10.7 7.5-17.5 15-17.5S33.8 17.3 35 28" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/><path d="M11 30c2.4-6.8 5.4-9.4 9-9.4s6.6 2.6 9 9.4" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></span><span>Arc</span><span class="chain-check" aria-hidden="true"></span></button>
+    <button type="button" class="chain-option" role="option" data-chain="ethereum" aria-selected="false" id="chainOptionEthereum"><span class="chain-mark chain-ethereum"><svg viewBox="0 0 40 40" aria-hidden="true" focusable="false"><path d="M20 3 8 21l12 6 12-6Z" fill="#b5b3d4"/><path d="M20 3v24l12-6Z" fill="#8589bc"/><path d="M8 25l12 12 12-12-12 6Z" fill="#939bcb"/><path d="M20 31v6l12-12Z" fill="#c8c9e2"/><path d="M20 3 8 21l12 6Z" fill="#d0d1ec"/></svg></span><span>Ethereum</span><span class="chain-check" aria-hidden="true"></span></button>
+    <button type="button" class="chain-option" role="option" data-chain="robinhood" aria-selected="false" id="chainOptionRobinhood"><span class="chain-mark chain-robinhood"><svg viewBox="0 0 40 40" aria-hidden="true" focusable="false"><path d="M30 5C19 4 10 10 9 23c5-3 11-6 17-8-7 7-14 13-19 21 8-7 13-9 19-15 4-4 6-10 4-16Z" fill="#28d78a"/><path d="m9 23 12-1 5-7M18 15l3 7" stroke="#071d22" stroke-width="1.7" fill="none" stroke-linejoin="round"/></svg></span><span>Robinhood Chain</span><span class="chain-check" aria-hidden="true"></span></button>
+  </div>
+</div><span id="networkNote">Results never mix token data from different networks.</span></div>
 <div class="search">
 <input id="address" aria-label="Token name, ticker or contract address" spellcheck="false" value="" placeholder="Token name, ticker or 0x contract address">
 <button id="go">SEARCH / SCAN</button>
@@ -377,6 +419,69 @@ const EVM_ADDRESS=/^0x[0-9a-fA-F]{40}$/;
 const NETWORKS={arc:{id:5042,label:'Arc',explorer:'https://explorer.arc.io'},ethereum:{id:1,label:'Ethereum',explorer:'https://eth.blockscout.com'},robinhood:{id:4663,label:'Robinhood Chain',explorer:'https://robinhoodchain.blockscout.com'}};
 let searchVersion=0,activeController=null;
 const selected=()=>$('chain').value;
+const NETWORK_ICON_MARKUP={
+ arc:"<svg viewBox=\"0 0 40 40\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M5 28c1.2-10.7 7.5-17.5 15-17.5S33.8 17.3 35 28\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.6\" stroke-linecap=\"round\"/><path d=\"M11 30c2.4-6.8 5.4-9.4 9-9.4s6.6 2.6 9 9.4\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.4\" stroke-linecap=\"round\"/></svg>",
+ ethereum:"<svg viewBox=\"0 0 40 40\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M20 3 8 21l12 6 12-6Z\" fill=\"#b5b3d4\"/><path d=\"M20 3v24l12-6Z\" fill=\"#8589bc\"/><path d=\"M8 25l12 12 12-12-12 6Z\" fill=\"#939bcb\"/><path d=\"M20 31v6l12-12Z\" fill=\"#c8c9e2\"/><path d=\"M20 3 8 21l12 6Z\" fill=\"#d0d1ec\"/></svg>",
+ robinhood:"<svg viewBox=\"0 0 40 40\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M30 5C19 4 10 10 9 23c5-3 11-6 17-8-7 7-14 13-19 21 8-7 13-9 19-15 4-4 6-10 4-16Z\" fill=\"#28d78a\"/><path d=\"m9 23 12-1 5-7M18 15l3 7\" stroke=\"#071d22\" stroke-width=\"1.7\" fill=\"none\" stroke-linejoin=\"round\"/></svg>"
+};
+function syncNetworkPicker(){
+ const network=selected();
+ if(!Object.hasOwn(NETWORKS,network))return;
+ $('currentChainName').textContent=NETWORKS[network].label;
+ const logo=$('currentChainLogo');
+ // Static local SVG paths: never derive HTML from API responses.
+ logo.innerHTML=NETWORK_ICON_MARKUP[network];
+ logo.className='chain-mark chain-'+network;
+ for(const option of $('chainMenu').querySelectorAll('[data-chain]'))
+  option.setAttribute('aria-selected',String(option.dataset.chain===network));
+}
+function closeNetworkPicker({returnFocus=false}={}){
+ $('chainMenu').hidden=true;
+ $('chainTrigger').setAttribute('aria-expanded','false');
+ if(returnFocus)$('chainTrigger').focus();
+}
+function openNetworkPicker(){
+ $('chainMenu').hidden=false;
+ $('chainTrigger').setAttribute('aria-expanded','true');
+ const current=$('chainMenu').querySelector('[data-chain="'+selected()+'"]');
+ current?.focus();
+}
+function setNetwork(network,{notify=true}={}){
+ if(!Object.hasOwn(NETWORKS,network))return;
+ const changed=selected()!==network;
+ setNetwork(network,{notify:false});
+ syncNetworkPicker();
+ closeNetworkPicker();
+ if(changed&&notify)$('chain').dispatchEvent(new Event('change',{bubbles:true}));
+}
+function initializeNetworkPicker(){
+ syncNetworkPicker();
+ $('chainTrigger').addEventListener('click',()=>{
+  if($('chainMenu').hidden)openNetworkPicker();
+  else closeNetworkPicker({returnFocus:true});
+ });
+ const options=[...$('chainMenu').querySelectorAll('.chain-option')];
+ for(const [idx,button] of options.entries()){
+  button.addEventListener('click',()=>{setNetwork(button.dataset.chain);$('chainTrigger').focus()});
+  button.addEventListener('keydown',event=>{
+   if(event.key==='Escape'){event.preventDefault();closeNetworkPicker({returnFocus:true});return}
+   const move=event.key==='ArrowDown'?1:event.key==='ArrowUp'?-1:0;
+   if(move){event.preventDefault();options[(idx+move+options.length)%options.length].focus()}
+   else if(event.key==='Home'){event.preventDefault();options[0].focus()}
+   else if(event.key==='End'){event.preventDefault();options[options.length-1].focus()}
+   else if(event.key==='Tab'){closeNetworkPicker()}
+  });
+ }
+ $('chainTrigger').addEventListener('keydown',event=>{
+  if(['ArrowDown','ArrowUp','Enter',' '].includes(event.key)){
+   event.preventDefault();openNetworkPicker();
+  }else if(event.key==='Escape')closeNetworkPicker({returnFocus:true});
+ });
+ document.addEventListener('pointerdown',event=>{
+  if(!$('networkPicker').contains(event.target))closeNetworkPicker();
+ });
+}
+
 const tokenPath=(network,address)=>'/token/'+network+'/'+address.toLowerCase();
 const tokenRoute=pathname=>{
  const match=/^\/token\/(arc|ethereum|robinhood)\/(0x[0-9a-fA-F]{40})\/?$/.exec(pathname);
@@ -733,6 +838,7 @@ $('copyLink').addEventListener('click',async()=>{
  }
 });
 window.addEventListener('popstate',restoreRoute);
+initializeNetworkPicker();
 restoreRoute();
 
 </script>

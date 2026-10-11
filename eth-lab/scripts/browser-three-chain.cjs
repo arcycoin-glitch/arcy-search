@@ -124,6 +124,17 @@ async function main(){
    const natural=await mascot.evaluate(img=>({width:img.naturalWidth,height:img.naturalHeight}));
    assert.ok(natural.width>0&&natural.height>0,'ARCY owl image must load successfully');
    assert.equal(await page.locator('link[rel="icon"]').getAttribute('href'),'/assets/hero-arcy.png');
+   const greeting=page.locator('.hero-greeting-video');
+   assert.equal(await greeting.count(),1);
+   assert.equal(await greeting.getAttribute('data-src'),'/assets/arcy-greeting.mp4');
+   assert.equal(await greeting.getAttribute('muted'),'');
+   assert.equal(await greeting.getAttribute('playsinline'),'');
+   const range=await page.request.get(base+'/assets/arcy-greeting.mp4',{headers:{Range:'bytes=0-15'}});
+   assert.equal(range.status(),206,'Greeting video must support byte-range playback');
+   const body=await range.body();
+   assert.equal(body.byteLength,16);
+   assert.equal(body.subarray(4,8).toString(),'ftyp');
+
 
    await page.locator('#address').fill(addr);
    await page.locator('#go').click();

@@ -1,0 +1,12 @@
+/* Source-first premium weekly edition. */
+.pulse-week{font-size:11px;color:#88b4c5}
+.pulse-entries{display:grid;gap:10px}
+.pulse-entry{display:flex;gap:15px;align-items:center;min-height:72px;padding:16px 18px;
+ color:#e9f7ff;text-decoration:none;background:#0b1e2d;border:1px solid rgba(128,190,213,.16);
+ border-radius:14px}
+.pulse-entry:hover,.pulse-entry:focus-visible{border-color:#65c5d8;background:#102d3f;outline-offset:2px}
+.pulse-entry strong{display:block;font-size:13px;line-height:1.5}
+.pulse-entry small{display:block;color:#8caabb;font-size:10px;margin-top:7px}
+.pulse-arrow{margin-left:auto;color:#81cbdc}
+.pulse-empty{padding:22px;border:1px solid rgba(128,190,213,.16);border-radius:13px;
+ color:#9fbdca;background:#0a1c2b;font-size:12px;line-height:1.8}

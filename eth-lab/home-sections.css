@@ -25,3 +25,14 @@
 .unlock-copy{display:block;flex:1;min-width:0}
 .unlock-copy strong{font-size:12px;line-height:1.45}
 .unlock-copy small{display:block;font-size:10px;color:#89abba;margin-top:5px}
+
+
+.action-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:23px 0 11px}
+.premium-action,.secondary-action{display:inline-flex;align-items:center;justify-content:center;
+ min-height:46px;padding:12px 18px;border-radius:12px;text-decoration:none;font-size:12px;font-weight:700}
+.premium-action{background:#75d5e9;color:#051925;border:1px solid #75d5e9}
+.premium-action:hover,.premium-action:focus-visible{background:#9ce6f3;color:#021923;outline-offset:3px}
+.secondary-action{border:1px solid rgba(141,211,234,.35);background:#0d2839;color:#addde9}
+.secondary-action:hover,.secondary-action:focus-visible{background:#12374a;border-color:#7acee5}
+.research-home{margin-top:82px}
+@media(max-width:550px){.action-row{align-items:stretch}.premium-action,.secondary-action{flex:1 1 210px}}

@@ -1,7 +1,17 @@
 # ARCY SEARCH — Approved token-detail UX decision
 Date: 2026-10-11
-Status: APPROVED BY PRODUCT OWNER; IMPLEMENTATION PENDING
+Status: APPROVED; implemented in isolated test branch, not yet deployed or production-parity audited
 Applies to: The NEXT `arcy-search` test site (Arc, Ethereum, Robinhood Chain). No changes to the current live `arcyusdc.xyz` site until release gates pass.
+
+## Visual product standard — approved 2026-10-11
+- Inspiration: Synthra and Argus **quality and restraint**, not imitation of their visual branding.
+- Premium dark navy with modest cyan accents, excellent typography, abundant negative space, cohesive rhythm, accessible contrast, and light motion only where useful.
+- Discovery home must stay visually minimal: one leading search action, clean chain selector, no wall of metrics.
+- Token detail must privilege contract identity, **three concise headline facts**, and a single source-bound historical chart. No multiple busy dashboard graphs.
+- Keep the five-card, twenty-field full report behind an explicit expandable section. Keep specialist modules (Before You Buy, Exit Reality, What Changed?, Claim vs Reality) behind their own disclosure until reliable features are ready.
+- No fictional candles, false investor-safety scores, fake badges or decorative 'live' claims.
+- Mobile-first across 320px, 390px, 768px and 1440px; navigate in same tab via stable chain/address deep links.
+- The historical chart uses a single exact-token GeckoTerminal pool's source data when independently verified. The external source must be attributed and may be absent on chains where support cannot be confirmed.
 
 ## Non-negotiable navigation
 1. Keep the home/search/discovery screen minimal, fast and clean. Network selector, search, ranked original/verified contract result, core ARCY content and Arc Pulse continue to live here.
@@ -38,3 +48,10 @@ E. Clear data/provider attribution and read-only / not investment advice note.
 6. Release only after the old production features (Arc holder worker, Pulse, burn counter, research, swap, source-reviewed tax/LP) are preserved and Vercel test deployment acceptance is complete.
 
 **No domain cutover, no merge to production and no public claims of finished features before all release gates pass.**
+
+## Implementation checkpoint
+- Test branch: `feature/three-chain-release-lab-20261011`.
+- Home and token detail route implemented, with Vercel route-rewrite configuration (requires deployment verification).
+- User-controlled, folded disclosures keep deep metrics and unimplemented specialist tools out of the initial viewport.
+- Read-only GeckoTerminal exact-chain OHLCV source adapter and source-attributed SVG chart are implemented as a fail-closed enhancement; live deployed provider compatibility, rate limits and permitted commercial use require confirmation.
+- Do not treat passing isolated-browser tests as approval to replace the current live domain.

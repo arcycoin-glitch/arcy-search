@@ -449,7 +449,7 @@ function openNetworkPicker(){
 function setNetwork(network,{notify=true}={}){
  if(!Object.hasOwn(NETWORKS,network))return;
  const changed=selected()!==network;
- setNetwork(network,{notify:false});
+ $('chain').value=network;
  syncNetworkPicker();
  closeNetworkPicker();
  if(changed&&notify)$('chain').dispatchEvent(new Event('change',{bubbles:true}));
@@ -502,7 +502,7 @@ function activateDetail(address,network,{push=true,identity=null}={}){
  cancelPending();
  const canonical=tokenPath(network,address);
  if(push&&location.pathname!==canonical)history.pushState({},'',canonical);
- $('chain').value=network;
+ setNetwork(network,{notify:false});
  $('discovery').hidden=true;$('tokenDetail').hidden=false;
  $('asset').replaceChildren();clearIdentity();render(null);
  $('quickFacts').replaceChildren();

@@ -17,7 +17,8 @@
   if(v===null||v===undefined||v==='')return 'NOT VERIFIED';
   const n=Number(v);
   if(!Number.isFinite(n))return 'NOT VERIFIED';
-  const units=[[1e12,'T'],[1e9,'B'],[1e6,'M'],[1e3,'K']];
+  if(Math.abs(n)>=1e24)return Number(n.toPrecision(4)).toExponential();
+  const units=[[1e21,'Sx'],[1e18,'Qi'],[1e15,'Q'],[1e12,'T'],[1e9,'B'],[1e6,'M'],[1e3,'K']];
   for(let i=0;i<units.length;i++){
    const [divisor,suffix]=units[i];
    if(Math.abs(n)<divisor)continue;

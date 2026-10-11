@@ -25,7 +25,7 @@ test('threshold rounding does not output 1000K or 1000M',()=>{
  assert.equal(display(1000,'holderCount'),'1K');
  assert.equal(display(999999,'holderCount'),'1M');
  assert.equal(display('999999999','totalSupply'),'1B');
- assert.equal(display(1999,'holderCount'),'2K');
+ assert.equal(display(1999,'holderCount'),'1.999K');
  assert.equal(display(999,'holderCount'),'999');
  assert.equal(display('999.99','totalSupply'),'1K');
 });

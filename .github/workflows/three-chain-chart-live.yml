@@ -1,0 +1,26 @@
+name: GeckoTerminal historical chart mainnet verification
+on:
+  push:
+    branches: [feature/three-chain-release-lab-20261011]
+    paths:
+      - 'eth-lab/scripts/live-chart.cjs'
+      - '.github/workflows/three-chain-chart-live.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  charts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    defaults:
+      run:
+        working-directory: eth-lab
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Read exact-token pool OHLCV from public mainnets
+        run: node scripts/live-chart.cjs

@@ -168,6 +168,12 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
 #moreResearch>summary::after{content:' +';float:right}
 #moreResearch[open]>summary::after{content:' −'}
 #moreResearch .research-tools{margin:0 0 20px}
+.price-canvas{width:100%;height:216px;margin:8px 0 13px;overflow:hidden}
+.price-canvas svg{width:100%;height:100%;display:block}
+.price-canvas path{vector-effect:non-scaling-stroke}
+.chart-shell .chart-note{margin:8px 0 12px}
+.chart-shell[aria-busy="true"]{opacity:.95}
+@media(max-width:550px){.price-canvas{height:166px}}
 </style>
 </head>
 <body>
@@ -210,6 +216,7 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
   <div id="quickFacts" class="detail-quick" aria-label="Key token metrics"></div>
   <div class="chart-shell" aria-label="Price history status">
     <h2>Price history</h2>
+    <div id="chartPlot" hidden role="img" aria-label="Verified daily USD price history" class="price-canvas"></div>
     <p id="chartNote" class="chart-note">No exact-chain, contract-bound candle series verified for this token yet. We will never draw invented price history.</p>
     <a id="marketLink" hidden target="_blank" rel="noopener noreferrer">View source-matched market ↗</a>
   </div>
@@ -396,7 +403,7 @@ function activateDetail(address,network,{push=true,identity=null}={}){
  $('quickFacts').replaceChildren();
  $('detailState').textContent='Reading '+NETWORKS[network].label+' contract evidence…';
  $('chartNote').textContent='No exact-chain price history has been verified for this contract. Never rely on fabricated chart data.';
- $('marketLink').hidden=true;
+ $('marketLink').hidden=true;$('chartPlot').hidden=true;$('chartPlot').replaceChildren();
  document.title='Token research · '+NETWORKS[network].label+' · ARCY SEARCH';
  window.scrollTo({top:0,behavior:'instant'});
  void scanAddress(address.toLowerCase(),network,searchVersion,identity);
@@ -405,6 +412,62 @@ function restoreRoute(){
  const route=tokenRoute(location.pathname);
  if(route)activateDetail(route.address,route.network,{push:false});
  else activateHome();
+}
+const NS='http://www.w3.org/2000/svg';
+function drawVerifiedChart(data){
+ const points=data.points;
+ if(!Array.isArray(points)||points.length<3||points.length>60||
+  !points.every(p=>Number.isFinite(p.close)&&p.close>0&&Number.isSafeInteger(p.time)))return false;
+ const min=Math.min(...points.map(p=>p.close)),max=Math.max(...points.map(p=>p.close));
+ const delta=max-min||Math.max(max*.02,Number.MIN_VALUE),top=max+delta*.14,bottom=Math.max(0,min-delta*.12);
+ const span=top-bottom;
+ if(!Number.isFinite(span)||span<=0)return false;
+ const y=p=>155-(p.close-bottom)/span*135;
+ const step=(800-24)/(points.length-1);
+ const coords=points.map((p,i)=>[12+i*step,y(p)]);
+ if(!coords.every(p=>p.every(Number.isFinite)))return false;
+ const svg=document.createElementNS(NS,'svg');
+ svg.setAttribute('viewBox','0 0 800 170');
+ svg.setAttribute('preserveAspectRatio','none');
+ const line=document.createElementNS(NS,'line');
+ for(const [k,v] of Object.entries({x1:'12',x2:'788',y1:'155',y2:'155',stroke:'#274355','stroke-width':'1'}))line.setAttribute(k,v);
+ svg.append(line);
+ const path=document.createElementNS(NS,'path');
+ path.setAttribute('d',coords.map(([x,y],i)=>(i?'L':'M')+x.toFixed(2)+' '+y.toFixed(2)).join(' '));
+ path.setAttribute('fill','none');path.setAttribute('stroke','#7ed5ec');
+ path.setAttribute('stroke-width','2.2');path.setAttribute('stroke-linejoin','round');
+ path.setAttribute('stroke-linecap','round');
+ svg.append(path);
+ $('chartPlot').replaceChildren(svg);$('chartPlot').hidden=false;
+ return true;
+}
+async function loadVerifiedChart(address,network,version){
+ const root=$('chartPlot');root.replaceChildren();root.hidden=true;
+ $('chartNote').textContent='Checking exact-chain historical pool data…';
+ $('marketLink').hidden=true;
+ if(network==='robinhood'){
+  $('chartNote').textContent='No verified Robinhood Chain price history source is currently available.';
+  return;
+ }
+ try{
+  const response=await fetch('/api/chart?'+new URLSearchParams({address,chain:network}),{
+   cache:'no-store',signal:activeController?.signal});
+  const payload=await response.json();
+  if(version!==searchVersion||network!==selected()||location.pathname!==tokenPath(network,address))return;
+  if(!response.ok||payload.ok!==true||payload.network!==network||
+   payload.chainId!==NETWORKS[network].id||payload.address!==address||!drawVerifiedChart(payload))
+   throw Error('Historical pool proof unavailable');
+  const source=new URL(payload.sourceUrl);
+  if(source.protocol!=='https:'||source.hostname!=='www.geckoterminal.com'||
+   !/^\/(arc|eth)\/pools\/0x[0-9a-f]{40,64}$/i.test(source.pathname))throw Error('Historical source link invalid');
+  $('marketLink').href=source.href;$('marketLink').hidden=false;
+  const last=new Date(payload.lastCandleTime*1000).toISOString().slice(0,10);
+  $('chartNote').textContent='GeckoTerminal · Last 30 daily USD closes · One verified pool · Latest candle: '+last+' · Source data, not a market-wide aggregate.';
+ }catch{
+  if(version!==searchVersion||location.pathname!==tokenPath(network,address))return;
+  root.replaceChildren();root.hidden=true;$('marketLink').hidden=true;
+  $('chartNote').textContent='No reliable exact-contract historical chart available. We do not invent price movement.';
+ }
 }
 function renderQuickFacts(report){
  const summary=[
@@ -526,6 +589,7 @@ async function scanAddress(address,network=selected(),version=searchVersion,chos
    localIndex||data.tokenIdentity;
   renderIdentity(identity,network);
   render(data);renderQuickFacts(data);
+  void loadVerifiedChart(address.toLowerCase(),network,version);
   document.title=(asset.name||asset.symbol||'Token')+' ('+(asset.symbol||'?')+') · ARCY SEARCH';
   $('detailState').textContent='Chain '+info.id+' · Snapshot complete · '+data.scannedAt+' · Unsupported metrics remain NOT VERIFIED.';
  }catch(error){

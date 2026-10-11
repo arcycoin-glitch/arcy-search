@@ -3,6 +3,7 @@
 // exactly match a token issuer's public, first-party contract documentation.
 // Market lists, ticker/logo matching, popularity and search ranking are NOT proof.
 const ADDRESS=/^0x[0-9a-f]{40}$/i;
+const {safeLogoUrl}=require('./token-image');
 const OFFICIAL=Object.freeze([
  Object.freeze({
   network:'ethereum',chainId:1,address:'0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
@@ -76,7 +77,15 @@ function rank(network,query,candidates){
  for(const item of candidates){
   if(!item||item.network!==network||item.chainId!==(network==='ethereum'?1:4663))continue;
   const address=typeof item.address==='string'?item.address.toLowerCase():'';
-  if(!ADDRESS.test(address)||ordered.has(address))continue;
+  if(!ADDRESS.test(address))continue;
+  if(ordered.has(address)){
+   const previous=ordered.get(address);
+   // An issuer-authenticated token can reuse marketplace artwork by EXACT
+   // contract address, but artwork NEVER conveys verification status.
+   const logoUrl=previous.logoUrl||safeLogoUrl(item.logoUrl);
+   if(logoUrl&&!previous.logoUrl)ordered.set(address,{...previous,logoUrl});
+   continue;
+  }
   const official=verified(network,address);
   const stock=trustedStock(item);
   const indexed=network==='ethereum'&&item.source==='CoinGecko'&&
@@ -96,7 +105,7 @@ function rank(network,query,candidates){
    name:canonical?.name||String(item.name||'').slice(0,90),
    symbol:canonical?.symbol||String(item.symbol||'').slice(0,30),
    source:canonical?'Official issuer contract documentation':String(item.source||'').slice(0,100),
-   registryMatched:stock,identityVerified:identity.status==='OFFICIAL_CONTRACT_MATCHED'||identity.status==='REGISTRY_MATCHED',identity});
+   registryMatched:stock,logoUrl:safeLogoUrl(item.logoUrl),identityVerified:identity.status==='OFFICIAL_CONTRACT_MATCHED'||identity.status==='REGISTRY_MATCHED',identity});
  }
  const rows=[...ordered.values()];
  rows.sort((a,b)=>{

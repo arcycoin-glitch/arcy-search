@@ -71,82 +71,14 @@
   if(isPercent(key))return prefix+fullNumeric(value)+'%';
   const compact=compactNumeric(value);
   const shown=compact||fullNumeric(value);
-  return prefix+(isUsd(key)?shown.startsWith('-')?'-
+  return prefix+(isUsd(key)?(shown.startsWith('-')?'-'+String.fromCharCode(36)+shown.slice(1):String.fromCharCode(36)+shown):shown);
  }
  function full(value,key,kind){
   if(typeof value==='boolean')return value?'TRUE':'FALSE';
   const prefix=label(kind),numeric=parseNumeric(value);
   if(!numeric)return prefix+String(value);
   const shown=fullNumeric(value);
-  return prefix+(isUsd(key)?shown.startsWith('-')?'-
- }
- return Object.freeze({display,full,compactNumeric});
-});
-+shown.slice(1):'
- }
- function full(value,key,kind){
-  if(typeof value==='boolean')return value?'TRUE':'FALSE';
-  const prefix=label(kind),numeric=parseNumeric(value);
-  if(!numeric)return prefix+String(value);
-  return prefix+(isUsd(key)?'$':'')+fullNumeric(value)+(isPercent(key)?'%':'');
- }
- return Object.freeze({display,full,compactNumeric});
-});
-+shown:shown);
- }
- function full(value,key,kind){
-  if(typeof value==='boolean')return value?'TRUE':'FALSE';
-  const prefix=label(kind),numeric=parseNumeric(value);
-  if(!numeric)return prefix+String(value);
-  return prefix+(isUsd(key)?'$':'')+fullNumeric(value)+(isPercent(key)?'%':'');
- }
- return Object.freeze({display,full,compactNumeric});
-});
-+shown.slice(1):'
- }
- return Object.freeze({display,full,compactNumeric});
-});
-+shown.slice(1):'
- }
- function full(value,key,kind){
-  if(typeof value==='boolean')return value?'TRUE':'FALSE';
-  const prefix=label(kind),numeric=parseNumeric(value);
-  if(!numeric)return prefix+String(value);
-  return prefix+(isUsd(key)?'$':'')+fullNumeric(value)+(isPercent(key)?'%':'');
- }
- return Object.freeze({display,full,compactNumeric});
-});
-+shown:shown);
- }
- function full(value,key,kind){
-  if(typeof value==='boolean')return value?'TRUE':'FALSE';
-  const prefix=label(kind),numeric=parseNumeric(value);
-  if(!numeric)return prefix+String(value);
-  return prefix+(isUsd(key)?'$':'')+fullNumeric(value)+(isPercent(key)?'%':'');
- }
- return Object.freeze({display,full,compactNumeric});
-});
-+shown:shown)+(isPercent(key)?'%':'');
- }
- return Object.freeze({display,full,compactNumeric});
-});
-+shown.slice(1):'
- }
- function full(value,key,kind){
-  if(typeof value==='boolean')return value?'TRUE':'FALSE';
-  const prefix=label(kind),numeric=parseNumeric(value);
-  if(!numeric)return prefix+String(value);
-  return prefix+(isUsd(key)?'$':'')+fullNumeric(value)+(isPercent(key)?'%':'');
- }
- return Object.freeze({display,full,compactNumeric});
-});
-+shown:shown);
- }
- function full(value,key,kind){
-  if(typeof value==='boolean')return value?'TRUE':'FALSE';
-  const prefix=label(kind),numeric=parseNumeric(value);
-  if(!numeric)return prefix+String(value);
-  return prefix+(isUsd(key)?'$':'')+fullNumeric(value)+(isPercent(key)?'%':'');
+  return prefix+(isUsd(key)?(shown.startsWith('-')?'-'+String.fromCharCode(36)+shown.slice(1):String.fromCharCode(36)+shown):shown)+(isPercent(key)?'%':'');
  }
  return Object.freeze({display,full,compactNumeric});
 });

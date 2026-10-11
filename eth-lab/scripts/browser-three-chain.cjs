@@ -58,7 +58,7 @@ async function main(){
    const errors=[];page.on('pageerror',e=>errors.push(e.message));
    page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
    await page.route('**/api/**',async route=>{
-    const u=new URL(route.request().url),network=u.searchParams.get('chain')||'arc';
+    const u=new URL(route.request().url()),network=u.searchParams.get('chain')||'arc';
     if(!Object.hasOwn(chainIds,network))return route.fulfill({status:400,body:'{}'});
     if(u.pathname==='/api/report'){
      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(report(network))});

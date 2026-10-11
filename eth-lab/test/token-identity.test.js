@@ -124,3 +124,19 @@ test('ONDO issuer documentation proves the exact Ethereum governance contract',(
  assert.equal(candidates[1].identityVerified,false);
  assert.equal(candidates[2].identity.status,'NOT_VERIFIED');
 });
+
+test('PAX Gold is only official for exact Paxos Ethereum contract address',()=>{
+ const PAXG='0x45804880de22913dafe09f4980848ece6ecbaf78';
+ const fake='0x1fa0618ecb8b1766af1bb6512afcf699cf859695';
+ const official=verified('ethereum',PAXG);
+ assert.equal(official.issuer,'Paxos');
+ assert.match(official.proofUrl,/paxos\.com/);
+ assert.equal(verified('ethereum',fake),null);
+ assert.equal(verified('robinhood',PAXG),null);
+ const list=rank('ethereum','PAXG',[
+  {network:'ethereum',chainId:1,address:fake,symbol:'PAXG',name:'Paxos Gold',source:'DexScreener'},
+  {network:'ethereum',chainId:1,address:PAXG,symbol:'PAXG',name:'PAX Gold',source:'DexScreener'}]);
+ assert.equal(list[0].address,PAXG);
+ assert.equal(list[0].identity.status,'OFFICIAL_CONTRACT_MATCHED');
+ assert.equal(list[1].identity.status,'NOT_VERIFIED');
+});

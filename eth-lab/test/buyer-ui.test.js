@@ -28,3 +28,12 @@ test('sourced metrics remain visible and missing values are available on demand'
  assert.match(html,/Show '\+missingRows\.length\+' unverified checks and reasons/);
  assert.match(html,/No source-backed values available for this token/);
 });
+
+test('only one main token appears by default with alternative contracts in expandable section',()=>{
+ assert.match(html,/function showCandidates\(data,network,version\)/);
+ assert.match(html,/container\.append\(candidateElement\(main,true\)\)/);
+ assert.match(html,/const expandable=document\.createElement\('details'\)/);
+ assert.match(html,/Show '\+others\.length\+' other matching contracts \/ related tokens/);
+ assert.match(html,/candidates\.find\(item=>official\(item\)&&exact\(item\)\)/);
+ assert.match(html,/docs\.ondo\.foundation/);
+});

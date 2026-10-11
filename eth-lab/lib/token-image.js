@@ -5,7 +5,8 @@ const DOMAINS=new Set([
  'coin-images.coingecko.com',
  'assets.coingecko.com',
  'cdn.dexscreener.com',
- 'dd.dexscreener.com'
+ 'dd.dexscreener.com',
+ 'assets.geckoterminal.com'
 ]);
 function safeLogoUrl(raw){
  if(typeof raw!=='string'||raw.length>500||raw.length<16)return null;

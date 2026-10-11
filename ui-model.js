@@ -4,7 +4,33 @@
  const paths={supply:['supply.totalSupply.amount','market.circulatingSupply','supply.burnAddressBalance.amount','unlock.nextUnlock.date'],whales:['holderCount','largestWalletPct','top10Pct','top20Pct'],control:['mint','pause','blacklist','owner / admin (proxy in badge/evidence)'],liquidity:['liquidityUsd','volume24h','dexCount / pairCount','lpStatus'],claims:['counts.checked','counts.verified','counts.mismatch','counts.unverified'],mechanics:['buyTax','sellTax','transferTax','burnMechanism / buybackAndBurn']};
  paths.activity=['priceUsd','valuation','change24h','volume24h'];
  const zero='0x0000000000000000000000000000000000000000';
- function compact(v){if(v===null||v===undefined||v==='')return 'NOT VERIFIED';const n=Number(v);if(!Number.isFinite(n))return 'NOT VERIFIED';for(const [d,s]of [[1e9,'B'],[1e6,'M'],[1e3,'K']])if(Math.abs(n)>=d)return (n/d).toFixed(1).replace(/\.0$/,'')+s;return new Intl.NumberFormat('en-US',{maximumFractionDigits:6}).format(n);}
+ // Summaries use up to four significant digits, with at most four decimal places.
+ // View Evidence keeps the original, unrounded source values.
+ function conciseNumber(n){
+  if(n===0)return '0';
+  const absolute=Math.abs(n);
+  if(absolute<0.0001)return Number(n.toPrecision(4)).toExponential();
+  const decimals=Math.min(4,Math.max(0,3-Math.floor(Math.log10(absolute))));
+  return new Intl.NumberFormat('en-US',{maximumFractionDigits:decimals}).format(n);
+ }
+ function compact(v){
+  if(v===null||v===undefined||v==='')return 'NOT VERIFIED';
+  const n=Number(v);
+  if(!Number.isFinite(n))return 'NOT VERIFIED';
+  if(Math.abs(n)>=1e24)return Number(n.toPrecision(4)).toExponential();
+  const units=[[1e21,'Sx'],[1e18,'Qi'],[1e15,'Q'],[1e12,'T'],[1e9,'B'],[1e6,'M'],[1e3,'K']];
+  for(let i=0;i<units.length;i++){
+   const [divisor,suffix]=units[i];
+   if(Math.abs(n)<divisor)continue;
+   const scaled=n/divisor;
+   const formatted=conciseNumber(scaled);
+   if(Math.abs(scaled)<1000&&Math.abs(Number(formatted.replace(/,/g,'')))>=1000&&i>0)return conciseNumber(n/units[i-1][0])+units[i-1][1];
+   return formatted+suffix;
+  }
+  const formatted=conciseNumber(n);
+  if(Math.abs(n)<1000&&Math.abs(Number(formatted.replace(/,/g,'')))>=1000)return n<0?'-1K':'1K';
+  return formatted;
+ }
  const money=v=>'$'+compact(v);
  function get(obj,path){let value=obj;for(const k of path.split('.')){if(!value||!Object.hasOwn(value,k))return {exists:false};value=value[k];}return {exists:true,value};}
  function missing(d,reason){return {text:'NOT VERIFIED',dataState:'FRONTEND_MAPPING_FAILED',reasonCode:'API_SCHEMA_MISMATCH',reason};}
@@ -37,9 +63,9 @@
    fields=['mint','pause','blacklist'].map(p=>fact(d,p));
    const owner=fact(d,'owner'),admin=fact(d,'admin');fields.push(d?.ok!==false&&[d?.owner,d?.admin].some(detected)?{text:'DETECTED',dataState:'DATA_FOUND'}:owner.dataState==='FRONTEND_MAPPING_FAILED'?owner:admin.dataState==='FRONTEND_MAPPING_FAILED'?admin:{text:'NOT VERIFIED',dataState:d?.dataState==='SOURCE_API_FAILED'?'SOURCE_API_FAILED':'NOT_VERIFIED',reasonCode:'NO_VALIDATED_OWNER_ADMIN',reason:'No nonzero owner/admin authority getter established. Proxy evidence is shown separately.'});
   }else if(name==='liquidity'){
-   fields=[read(d,'liquidityUsd',money),read(d,'volume24h',money)];const dex=read(d,'dexCount'),pairs=read(d,'pairCount');fields.push(dex.dataState==='DATA_FOUND'&&pairs.dataState==='DATA_FOUND'?{text:d.dexCount+' DEX · '+d.pairCount+' pairs',dataState:'DATA_FOUND'}:dex.dataState!=='DATA_FOUND'?dex:pairs);fields.push(fact(d,'lpStatus'));
+   fields=[read(d,'liquidityUsd',money),read(d,'volume24h',money)];const dex=read(d,'dexCount'),pairs=read(d,'pairCount');fields.push(dex.dataState==='DATA_FOUND'&&pairs.dataState==='DATA_FOUND'?{text:compact(d.dexCount)+' DEX · '+compact(d.pairCount)+' pairs',dataState:'DATA_FOUND'}:dex.dataState!=='DATA_FOUND'?dex:pairs);fields.push(fact(d,'lpStatus'));
   }else if(name==='activity'){
-   const price=f=>Number.isFinite(f.value)&&f.value>0?'$'+(f.value<0.01?Number(f.value.toPrecision(6)).toString():compact(f.value)):'NOT VERIFIED';
+   const price=f=>Number.isFinite(f.value)&&f.value>0?'$'+compact(f.value):'NOT VERIFIED';
    fields=[fact(d,'priceUsd',price),fact(d,'valuation',f=>['MARKET_CAP','FDV'].includes(f.kind)&&Number.isFinite(f.value)&&f.value>0?(f.kind==='FDV'?'FDV ':'MC ')+money(f.value):'NOT VERIFIED'),fact(d,'change24h',f=>Number.isFinite(f.value)?(f.value>0?'+':'')+compact(f.value)+'%':'NOT VERIFIED'),fact(d,'volume24h',f=>Number.isFinite(f.value)&&f.value>=0?money(f.value):'NOT VERIFIED')];
    fields=fields.map((f,i)=>f.text==='NOT VERIFIED'&&f.dataState==='DATA_FOUND'?missing(d,'Invalid market value at '+paths.activity[i]):f);
   }else if(name==='claims'){

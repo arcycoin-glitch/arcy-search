@@ -12,10 +12,11 @@ async function main(){
  for(const item of sample){
   const t=Date.now(),record={label:item.label,address:item.address,network:'arc',chainId:5042};
   try{
+   let watchdog;
    const result=await Promise.race([
     report({network:'arc',address:item.address}),
-    new Promise((_,reject)=>setTimeout(()=>reject(Error('Mainnet request deadline exceeded')),65000))
-   ]);
+    new Promise((_,reject)=>{watchdog=setTimeout(()=>reject(Error('Mainnet request deadline exceeded')),65000)})
+   ]).finally(()=>clearTimeout(watchdog));
    assert.equal(result.ok,true);
    assert.equal(result.network,'arc');
    assert.equal(result.chainId,5042);

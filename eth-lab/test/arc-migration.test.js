@@ -3,6 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const {chain,verifyChainId,rpcUrl}=require('../lib/chains');
 const market=require('../lib/arc-market');
 const {legacyRead}=require('../lib/arc-adapter');
+const {safeLogoUrl}=require('../lib/token-image');
 const ADDR='0x'+'1'.repeat(40),PAIR='0x'+'2'.repeat(40),ALT='0x'+'3'.repeat(40);
 function pair(overrides={}){
  return {chainId:'arc',pairAddress:PAIR,dexId:'uniswap',baseToken:{address:ADDR,name:'ARC TEST',symbol:'ARC'},
@@ -65,4 +66,39 @@ test('Arc market values missing provider data remain NOT VERIFIED not zero',()=>
  assert.equal(r.priceUsd.value,null);
  assert.equal(r.change24h.value,null);
  assert.equal(r.valuation.value,null);
+});
+
+test('GeckoTerminal Arc pool token catalog gives source-linked logos without impersonation proof',()=>{
+ const real='0x73e5f588d27d6b5ec89c89c82692d1e7fecbd38b';
+ const clone='0x2b4623c889ae110df5c80ce679aa062631ac92ab';
+ const logo='https://assets.geckoterminal.com/arc-test-image';
+ const included=[real,clone].map(addr=>({id:'arc_'+addr,type:'token',
+  attributes:{name:'Arcy',symbol:'ARCY',image_url:logo}}));
+ const pools=[real,clone].map((addr,i)=>({id:'arc_0x'+String(i+1).repeat(40),
+  type:'pool',attributes:{reserve_in_usd:i===0?'9000':'4'},
+  relationships:{base_token:{data:{id:'arc_'+addr}}}}));
+ const rows=market.parseGeckoSearch({included,data:pools},'ARCY');
+ assert.equal(rows.length,2);
+ assert.equal(rows[0].address,real);
+ assert.equal(rows[0].logoUrl,logo);
+ assert.equal(rows[0].chainId,5042);
+ assert.equal(rows[0].identityVerified,false);
+ assert.equal(rows[1].identityVerified,false);
+ assert.equal(safeLogoUrl(logo),logo);
+});
+test('GeckoTerminal names from Ethereum, wrong pool IDs and absent pool relations are excluded',()=>{
+ const address='0x'+'a'.repeat(40);
+ const body={included:[{id:'eth_'+address,type:'token',attributes:{name:'Arcy',symbol:'ARCY'}}],
+  data:[{id:'arc_0x'+'f'.repeat(40),type:'pool',relationships:{base_token:{data:{id:'eth_'+address}}}}]};
+ assert.deepEqual(market.parseGeckoSearch(body,'ARCY'),[]);
+ assert.deepEqual(market.parseGeckoSearch({included:body.included,data:[{id:'eth_0x'+'f'.repeat(40)}]},'ARCY'),[]);
+});
+test('GeckoTerminal Arc search cannot assign proof of original token issuer',()=>{
+ const rows=market.parseGeckoSearch({included:[{id:'arc_'+ADDR,type:'token',
+  attributes:{name:'Arcy',symbol:'ARCY',image_url:'javascript:alert(1)'}}],
+  data:[{id:'arc_0x'+'9'.repeat(40),type:'pool',
+   relationships:{base_token:{data:{id:'arc_'+ADDR}}}}]},'ARCY');
+ assert.equal(rows.length,1);
+ assert.equal(rows[0].identityVerified,false);
+ assert.equal(rows[0].logoUrl,null);
 });

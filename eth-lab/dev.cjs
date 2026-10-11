@@ -14,7 +14,7 @@
  }
  res.setHeader('Content-Length',size);fs.createReadStream(file).pipe(res);return;
 }
-if(url.pathname==='/home-pulse.js'||url.pathname==='/home-sections.css'){
+if(url.pathname==='/home-pulse.js'||url.pathname==='/home-unlocks.js'||url.pathname==='/home-sections.css'){
  res.setHeader('Content-Type',url.pathname.endsWith('.css')?'text/css; charset=utf-8':'text/javascript; charset=utf-8');
  res.setHeader('X-Content-Type-Options','nosniff');
  fs.createReadStream(path.join(__dirname,url.pathname.slice(1))).pipe(res);return

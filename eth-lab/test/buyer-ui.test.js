@@ -6,7 +6,7 @@ const path=require('node:path');
 // Guard the buyer-facing UI regressions without adding a browser dependency to production.
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 test('unscanned metrics are dashes, not prematurely NOT VERIFIED',()=>{
- assert.match(html,/value\.textContent=!report\?'—':missing\?'NOT VERIFIED'/);
+ assert.match(html,/const displayed=!report\?'—':missing\?'NOT VERIFIED'/);
  assert.match(html,/id="address"[^>]*value=""/);
 });
 test('issuer badges are visible in results and remain sticky during report scroll',()=>{

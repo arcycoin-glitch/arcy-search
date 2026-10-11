@@ -1,5 +1,6 @@
 'use strict';
 const {readJson}=require('./http');
+const {safeLogoUrl}=require('./token-image');
 const SOURCE='https://api.dexscreener.com/latest/dex/search/';
 const ADDRESS=/^0x[0-9a-f]{40}$/i;
 const SEARCH=/^[\p{L}\p{N}\s.$_+\-&]{2,48}$/u;
@@ -24,13 +25,15 @@ function parse(pairs,rawQuery){
    if(!lowerName.includes(q)&&!lowerSymbol.includes(q))continue;
    const relevance=lowerSymbol===q?0:lowerName===q?1:lowerSymbol.startsWith(q)?2:lowerName.startsWith(q)?3:4;
    const amount=Number(pair.liquidity?.usd),liquidity=Number.isFinite(amount)&&amount>=0?amount:0;
+   // DexScreener pair artwork identifies the base token only, never its quote asset.
+   const logoUrl=token===pair.baseToken?safeLogoUrl(pair.info?.imageUrl):null;
    const prev=found.get(address);
    if(!prev||relevance<prev.relevance||relevance===prev.relevance&&liquidity>prev.liquidity){
-    found.set(address,{name,symbol,address,chainId:1,network:'Ethereum',source:'DexScreener',identityVerified:false,relevance,liquidity});
+    found.set(address,{name,symbol,address,chainId:1,network:'Ethereum',source:'DexScreener',identityVerified:false,relevance,liquidity,logoUrl:logoUrl||prev?.logoUrl||null});
    }
   }
  }
- return [...found.values()].sort((a,b)=>a.relevance-b.relevance||b.liquidity-a.liquidity||a.address.localeCompare(b.address)).slice(0,12).map(({name,symbol,address,chainId,network,source,identityVerified})=>({name,symbol,address,chainId,network,source,identityVerified}));
+ return [...found.values()].sort((a,b)=>a.relevance-b.relevance||b.liquidity-a.liquidity||a.address.localeCompare(b.address)).slice(0,12).map(({name,symbol,address,chainId,network,source,identityVerified,logoUrl})=>({name,symbol,address,chainId,network,source,identityVerified,logoUrl}));
 }
 const COINGECKO_SEARCH='https://api.coingecko.com/api/v3/search?query=';
 const COINGECKO_DETAIL='https://api.coingecko.com/api/v3/coins/';
@@ -52,7 +55,8 @@ async function coinGeckoFallback(query){
   if(detail?.id!==coin.id)return null;
   const address=String(detail.platforms?.ethereum||'').toLowerCase();
   if(!ADDRESS.test(address))return null;
-  return {name:String(coin.name||'').slice(0,90),symbol:String(coin.symbol||'').slice(0,30),address,chainId:1,network:'Ethereum',source:'CoinGecko',catalogCoinId:coin.id,identityVerified:false};
+  return {name:String(coin.name||'').slice(0,90),symbol:String(coin.symbol||'').slice(0,30),address,chainId:1,network:'Ethereum',source:'CoinGecko',catalogCoinId:coin.id,identityVerified:false,
+   logoUrl:safeLogoUrl(detail.image?.small||detail.image?.thumb||detail.image?.large)||null};
  }));
  const result=[],seen=new Set();
  for(const detail of details)if(detail.status==='fulfilled'&&detail.value&&!seen.has(detail.value.address)){

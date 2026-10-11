@@ -99,3 +99,38 @@ test('CoinGecko never accepts a coin that lacks an exact Ethereum contract',asyn
   assert.deepEqual(await discover('Uniswap'),[]);
  }finally{global.fetch=original}
 });
+
+test('CoinGecko Ethereum contract is still consulted when DexScreener has 5 ticker clones',async()=>{
+ const original=global.fetch;
+ const PEPE='0x6982508145454ce325ddbe47a25d4ec3d2311933';
+ const clones=Array.from({length:5},(_,i)=>pair({name:'Pepe',symbol:'PEPE',address:'0x'+(i+50).toString(16).padStart(40,'0')},other));
+ const seen=[];
+ try{
+  global.fetch=async url=>{
+   const u=String(url);seen.push(u);
+   if(u.includes('/dex/search/'))return new Response(JSON.stringify({pairs:clones}));
+   if(u.includes('/api/v3/search?'))return new Response(JSON.stringify({coins:[{id:'pepe',name:'Pepe',symbol:'PEPE'}]}));
+   if(u.includes('/coins/pepe?'))return new Response(JSON.stringify({id:'pepe',platforms:{ethereum:PEPE}}));
+   throw Error('Unexpected URL '+u);
+  };
+  const result=await discover('PEPE');
+  assert.equal(result[0].address,PEPE);
+  assert.equal(result[0].source,'CoinGecko');
+  assert.equal(result[0].catalogCoinId,'pepe');
+  assert.equal(result[0].identityVerified,false);
+  assert.equal(result.length,6);
+  assert.ok(seen.some(x=>x.includes('/api/v3/search?')));
+ }finally{global.fetch=original}
+});
+test('CoinGecko 429 does not suppress live onchain-market contract candidates',async()=>{
+ const original=global.fetch;
+ try{
+  global.fetch=async url=>{
+   if(String(url).includes('/dex/search/'))return new Response(JSON.stringify({pairs:[pair(uni,other)]}));
+   return new Response('rate limited',{status:429});
+  };
+  const result=await discover('UNI');
+  assert.equal(result[0].address,ETH);
+  assert.equal(result[0].source,'DexScreener');
+ }finally{global.fetch=original}
+});

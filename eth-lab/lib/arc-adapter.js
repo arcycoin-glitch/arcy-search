@@ -42,7 +42,7 @@ function supply(base){
    proof(pct,'Arc RPC',{...details,method:'burn balance / totalSupply()',scope:'Current address custody only, not total historical burn.'},'ON_CHAIN_DERIVED')
  }};
 }
-async function holders({address}){
+async function holders({address}={}){
  // Uses only cryptographically signed COMPLETE historical snapshots.
  // No durable holder worker, private storage or indexing runs in this request.
  return require('./arc-holder-publication').load(address);

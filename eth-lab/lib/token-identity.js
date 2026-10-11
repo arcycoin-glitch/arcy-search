@@ -4,6 +4,7 @@
 // Market lists, ticker/logo matching, popularity and search ranking are NOT proof.
 const ADDRESS=/^0x[0-9a-f]{40}$/i;
 const {safeLogoUrl}=require('./token-image');
+const {chain}=require('./chains');
 const OFFICIAL=Object.freeze([
  Object.freeze({
   network:'ethereum',chainId:1,address:'0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
@@ -71,6 +72,7 @@ function knownMatches(network,query){
 }
 function rank(network,query,candidates){
  if(!Array.isArray(candidates))throw Error('Invalid token search candidates');
+ const chainId=chain(network).chainId;
  const known=knownMatches(network,query);
  const ordered=new Map();
  // First-party canonical records always win over provider-supplied display names.
@@ -78,7 +80,7 @@ function rank(network,query,candidates){
  const trustedStock=(item)=>network==='robinhood'&&item.registryMatched===true&&
   item.source==='Robinhood official asset registry';
  for(const item of candidates){
-  if(!item||item.network!==network||item.chainId!==(network==='ethereum'?1:4663))continue;
+  if(!item||item.network!==network||item.chainId!==chainId)continue;
   const address=typeof item.address==='string'?item.address.toLowerCase():'';
   if(!ADDRESS.test(address))continue;
   if(ordered.has(address)){

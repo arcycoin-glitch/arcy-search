@@ -42,14 +42,10 @@ function supply(base){
    proof(pct,'Arc RPC',{...details,method:'burn balance / totalSupply()',scope:'Current address custody only, not total historical burn.'},'ON_CHAIN_DERIVED')
  }};
 }
-async function holders(){
- // Never assert a complete holder ranking without the durable Arc worker.
- return {description:'Requires complete, pinned-block reconciled Arc holder publication.',fields:{
-  holderCount:NO('Production Arc holder snapshots must be integrated and authenticated.','HOLDER_WORKER_NOT_CONNECTED'),
-  largestWalletPct:NO('Complete, reconciled top-holder ranking unavailable.','HOLDER_RANKING_NOT_VERIFIED'),
-  top10Pct:NO('Complete, reconciled top-holder ranking unavailable.','HOLDER_RANKING_NOT_VERIFIED'),
-  top20Pct:NO('Complete, reconciled top-holder ranking unavailable.','HOLDER_RANKING_NOT_VERIFIED')
- }};
+async function holders({address}){
+ // Uses only cryptographically signed COMPLETE historical snapshots.
+ // No durable holder worker, private storage or indexing runs in this request.
+ return require('./arc-holder-publication').load(address);
 }
 async function activity({address},cardId){
  const response=await marketFor(address);
@@ -84,7 +80,7 @@ async function mechanics({address,base}){
 async function inspectCard({base,address,cardId}){
  switch(cardId){
  case 'supply':return supply(base);
- case 'holders':return holders();
+ case 'holders':return holders({address});
  case 'liquidity':case 'activity':return activity({address},cardId);
  case 'mechanics':return mechanics({address,base});
  default:throw Error('Invalid Arc card ID');

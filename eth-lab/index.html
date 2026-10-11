@@ -39,6 +39,15 @@ footer{font-size:12px;color:#7f99a8;margin-top:32px}
 .candidate{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:13px 15px;border:1px solid #28576b;background:#0c2434;color:#eaf6ff;border-radius:12px;text-align:left;cursor:pointer}
 .candidate:hover,.candidate:focus-visible{border-color:#32d5fb;background:#12354b;outline:none}
 .candidate-title{font-weight:700;font-size:13px;overflow-wrap:anywhere}.candidate-meta{display:block;margin-top:4px;color:#9eb6c4;font-size:11px;overflow-wrap:anywhere}
+.candidate-detail{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.candidate-copy{min-width:0;flex:1}
+.candidate-logo{position:relative;flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:13px;background:#173649;border:1px solid #305a70;color:#9bc7dc;font-size:14px;font-weight:800;overflow:hidden}
+.candidate-logo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#132c40}
+.candidate .scan-label{white-space:nowrap;flex-shrink:0;font-size:12px;color:#a5daeb}
+.candidate-list{display:grid;gap:9px}
+.candidate-footnote{font-size:11px;color:#c3a974;padding:0 3px}
+@media(max-width:550px){.candidate-detail{width:100%}.candidate .scan-label{padding-left:56px}}
+
 .candidate-warning{font-size:11px;color:#e6c77a;margin:0 0 10px}
 .candidate-primary{border-color:#347e8e;background:#0d2d3d}
 .candidate-primary.official{border-color:#3bae9c;background:#103b38}
@@ -341,12 +350,21 @@ async function scanAddress(address,network=selected(),version=searchVersion,chos
   $('asset').replaceChildren();clearIdentity();render(null);
  }finally{if(version===searchVersion&&network===selected()){button.disabled=false;if(activeController===controller)activeController=null}}
 }
+function safeCandidateImage(raw){
+ if(typeof raw!=='string'||raw.length>500)return null;
+ try{
+  const u=new URL(raw);
+  if(u.protocol!=='https:'||u.username||u.password||u.port||u.hash||
+    !['coin-images.coingecko.com','assets.coingecko.com',
+      'cdn.dexscreener.com','dd.dexscreener.com'].includes(u.hostname))return null;
+  if(/\.(?:svg|html?|xml|pdf)(?:$|\/)/i.test(u.pathname))return null;
+  return u.href;
+ }catch{return null}
+}
 function showCandidates(data,network,version){
  const container=$('matches');container.replaceChildren();
  const candidates=data.matches.filter(item=>
   item.chainId===NETWORKS[network].id&&item.network===network&&EVM_ADDRESS.test(item.address));
- // Favor an exact ticker/name match within a source-verified issuer record.
- // A third-party catalog listing is never promoted to "official".
  const query=$('address').value.trim().toLocaleLowerCase('en-US');
  const exact=item=>String(item.symbol||'').toLowerCase()===query||
   String(item.name||'').toLowerCase()===query;
@@ -357,16 +375,29 @@ function showCandidates(data,network,version){
   candidates.find(item=>exact(item)&&item.identity?.status==='INDEXED_ON_COINGECKO')||
   candidates.find(exact)||candidates[0];
  if(!main){container.hidden=true;return}
- const others=candidates.filter(item=>item.address.toLowerCase()!==main.address.toLowerCase());
+ const trustedMain=official(main);
  const warning=document.createElement('p');warning.className='candidate-warning';
- warning.textContent=official(main)?
-  'Issuer-confirmed contract shown first. Other matching contracts remain accessible below.':
-  'No issuer-confirmed contract for this search. Confirm the full '+NETWORKS[network].label+' contract before buying.';
+ warning.textContent=trustedMain?
+  'Official contract shown first. Other name matches are available below. Logo is not proof of identity.':
+  'No issuer-confirmed contract for this search. Candidate logos come from market sources and do NOT verify authenticity.';
  container.append(warning);
  function candidateElement(item,primary=false){
   const option=document.createElement('button');option.type='button';option.className='candidate';
   if(primary)option.classList.add('candidate-primary');
-  const info=document.createElement('span'),title=document.createElement('span'),meta=document.createElement('span');
+  const detail=document.createElement('span');detail.className='candidate-detail';
+  const art=document.createElement('span');art.className='candidate-logo';
+  const initials=String(item.symbol||item.name||'?').replace(/[^a-z0-9]/gi,'').slice(0,2).toUpperCase()||'?';
+  art.textContent=initials;
+  const logo=safeCandidateImage(item.logoUrl);
+  if(logo){
+   const img=document.createElement('img');
+   img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';
+   img.alt='';img.src=logo;
+   img.addEventListener('error',()=>img.remove(),{once:true});
+   art.append(img);
+  }
+  const info=document.createElement('span');info.className='candidate-copy';
+  const title=document.createElement('span'),meta=document.createElement('span');
   title.className='candidate-title';title.textContent=(item.name||'Unnamed token')+' ('+(item.symbol||'?')+')';
   meta.className='candidate-meta';
   const status=item.identity?.status==='OFFICIAL_CONTRACT_MATCHED'?' · OFFICIAL CONTRACT MATCHED':
@@ -380,10 +411,10 @@ function showCandidates(data,network,version){
    item.identity?.status==='REGISTRY_MATCHED'?'✓ OFFICIAL STOCK TOKEN':
    item.identity?.status==='INDEXED_ON_COINGECKO'?'ℹ COINGECKO LISTED':'⚠ NOT VERIFIED';
   if(!item.identity||item.identity.status==='NOT_VERIFIED')badge.classList.add('unknown');
-  info.append(badge);
-  const choose=document.createElement('span');choose.textContent='SCAN →';
+  info.append(badge);detail.append(art,info);
+  const choose=document.createElement('span');choose.textContent='SCAN →';choose.className='scan-label';
   if(official(item))option.classList.add('official');
-  option.append(info,choose);
+  option.append(detail,choose);
   option.addEventListener('click',()=>{
    if(version!==searchVersion||network!==selected())return;
    cancelPending();$('address').value=item.address;
@@ -391,14 +422,27 @@ function showCandidates(data,network,version){
   });
   return option;
  }
- container.append(candidateElement(main,true));
- if(others.length){
-  const expandable=document.createElement('details');expandable.className='candidate-extra';
-  const summary=document.createElement('summary');
-  summary.textContent='Show '+others.length+' other matching contracts / related tokens';
-  const content=document.createElement('div');content.className='candidate-extra-list';
-  for(const candidate of others)content.append(candidateElement(candidate));
-  expandable.append(summary,content);container.append(expandable);
+ if(trustedMain){
+  // Project-authenticated or exact issuer-registry address: one main card by default.
+  container.append(candidateElement(main,true));
+  const others=candidates.filter(item=>item.address.toLowerCase()!==main.address.toLowerCase());
+  if(others.length){
+   const expandable=document.createElement('details');expandable.className='candidate-extra';
+   const summary=document.createElement('summary');
+   summary.textContent='Show '+others.length+' other matching contracts / related tokens';
+   const content=document.createElement('div');content.className='candidate-extra-list';
+   for(const candidate of others)content.append(candidateElement(candidate));
+   expandable.append(summary,content);container.append(expandable);
+  }
+ }else{
+  // No issuer confirmation: do not silently choose an arbitrary token.
+  // Show all candidate identities, including each exact contract and its sourced artwork.
+  const list=document.createElement('div');list.className='candidate-list';
+  for(const candidate of candidates)list.append(candidateElement(candidate));
+  container.append(list);
+  const footnote=document.createElement('p');footnote.className='candidate-footnote';
+  footnote.textContent=candidates.length+' separate token contracts. Choose by full address; the same ticker/logo can represent different projects.';
+  container.append(footnote);
  }
  container.hidden=false;
 }
@@ -422,7 +466,7 @@ async function searchOrScan(){
    data.network!==network||!Array.isArray(data.matches))throw Error(data.error||'Discovery source unavailable');
   if(!data.matches.length){$('state').textContent='No '+NETWORKS[network].label+' candidates found. Try the full contract address.';return}
   showCandidates(data,network,version);
-  $('state').textContent='Showing 1 main result. '+(data.matches.length-1)+' additional matching contracts are available below.';
+  $('state').textContent=data.matches.length+' matching contract(s). Verified issuers show one primary result; unverified names show all candidates.';
  }catch(error){
   if(version===searchVersion&&network===selected()&&!controller.signal.aborted)
    $('state').textContent='Token search unavailable: '+String(error.message).slice(0,140);

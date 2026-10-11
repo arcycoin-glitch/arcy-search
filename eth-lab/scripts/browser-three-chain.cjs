@@ -141,6 +141,11 @@ async function main(){
    assert.equal(await page.locator('footer a[href*="github.com"]').count(),1);
    assert.equal(await page.locator('#discovery').isVisible(),true);
    assert.equal(await page.locator('#tokenDetail').isVisible(),false);
+   assert.equal(await page.locator('.home-entry-links a').count(),2);
+   assert.equal(await page.locator('.home-entry-links a').first().getAttribute('href'),'/token/arc/'+addr);
+   assert.equal(await page.locator('.home-entry-links a').last().getAttribute('href'),'#arcyBurn');
+   await page.locator('.home-entry-links a').last().click();
+   await page.waitForFunction(()=>location.hash==='#arcyBurn');
    await page.locator('#arcyBurn').scrollIntoViewIfNeeded();
    await page.waitForFunction(()=>document.querySelector('#burnProof').textContent.includes('3/3 source-backed'));
    assert.equal(await page.locator('#burnSupply').innerText(),'1.235B');

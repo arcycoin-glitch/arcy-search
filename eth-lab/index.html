@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="ARCY SEARCH — Arc, Ethereum and Robinhood Chain token intelligence research lab.">
+<link rel="icon" href="/assets/hero-arcy.png" type="image/png">
 <title>ARCY SEARCH — Multichain Lab</title>
 <style>
 :root{font-family:Inter,system-ui,Arial;color:#eaf6ff;background:#040b15}
@@ -203,6 +204,17 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
 .chain-option[aria-selected="true"] .chain-check{border:4px solid #63d8ee;background:#082a3a;box-shadow:0 0 0 1px #63d8ee}
 @media(max-width:550px){.network-picker{width:100%;min-width:0}.network-menu{z-index:55}.network-trigger{min-height:54px}}
 
+
+/* Original ARCY mascot — quiet, premium hero; no decorative clones. */
+.hero{padding:clamp(16px,4vh,44px) 0 30px}
+.hero-mascot{display:grid;place-items:center;width:100%;margin:0 auto 17px}
+.hero-mascot img{display:block;width:clamp(118px,13vw,176px);height:auto;aspect-ratio:1;
+ object-fit:contain;filter:drop-shadow(0 9px 21px rgba(30,151,203,.16))}
+@media(max-width:550px){
+ .hero{padding:20px 0 22px}
+ .hero-mascot{margin-bottom:16px}
+ .hero-mascot img{width:130px}
+}
 </style>
 </head>
 <body>
@@ -216,6 +228,7 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
 </header>
 <section id="discovery">
 <div class="hero">
+  <div class="hero-mascot" aria-label="Original ARCY owl mascot"><img src="/assets/hero-arcy.png" width="184" height="184" alt="ARCY's original blue-and-white owl mascot" decoding="async" fetchpriority="high"></div>
   <div class="eyebrow">ARCY · TOKEN INTELLIGENCE</div>
   <h2>Know what you're buying.</h2>
   <p>Three chains. One clear picture. Search any token, verify its contract, and research the evidence before you decide.</p>

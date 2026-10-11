@@ -15,7 +15,13 @@ const {readJson}=require('./http');
 let rpcId=0;
 async function rpc(method,params,{timeoutMs=12000}={}){
   const id=++rpcId;
-  const response=await fetch(RPC_URL,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id,method,params}),signal:AbortSignal.timeout(timeoutMs)});
+  // Ref-counted timeout: Node's unref'd AbortSignal.timeout can leave promises unresolved in CI.
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(new DOMException('RPC request timed out','TimeoutError')),timeoutMs);
+  let response;
+  try{response=await fetch(RPC_URL,{method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({jsonrpc:'2.0',id,method,params}),signal:controller.signal})}
+  finally{clearTimeout(timer)}
   if(!response.ok)throw Error('Ethereum RPC HTTP '+response.status);
   const result=await readJson(response,1024*1024);
   if(!result||typeof result!=='object'||Array.isArray(result)||result.jsonrpc!=='2.0'||result.id!==id)throw Error('Ethereum RPC response identity mismatch');

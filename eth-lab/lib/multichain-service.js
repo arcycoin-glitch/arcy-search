@@ -5,6 +5,7 @@ const ethereumReport=require('./report');
 const ethereumDiscover=require('./discover');
 const ethereumToken=require('./eth');
 const robinhood=require('./robinhood-adapter');
+const arc=require('./arc-adapter');
 const chains=require('./chains');
 const identities=require('./token-identity');
 const {createCache}=require('./discovery-cache');
@@ -17,9 +18,10 @@ const ethereumAdapter={
  async inspectCard({base,cardId}){return base.fullReport.cards[cardId]},
  async discover({query}){return (await ethereumDiscover.discover(query)).map(x=>({...x,network:'ethereum',chainId:1}))}
 };
-const engine=createEngine({ethereum:ethereumAdapter,robinhood});
+const engine=createEngine({ethereum:ethereumAdapter,robinhood,arc});
 const ethCache=createCache(async q=>engine.discover({network:'ethereum',query:q}).then(x=>x.candidates));
 const rhCache=createCache(async q=>engine.discover({network:'robinhood',query:q}).then(x=>x.candidates));
+const arcCache=createCache(async q=>engine.discover({network:'arc',query:q}).then(x=>x.candidates));
 function parseChain(raw){
  const value=raw===undefined?'ethereum':raw;
  return chains.chain(value).id;
@@ -33,8 +35,9 @@ async function report({network='ethereum',address}){
 }
 async function token({network='ethereum',address}){
  if(network==='ethereum')return ethereumToken.inspect(address);
- const t=await robinhood.inspectToken({address});
- const supply=await robinhood.supply(t);
+ const adapter=network==='arc'?arc:robinhood;
+ const t=await adapter.inspectToken({address});
+ const supply=await adapter.supply(t);
  return {ok:true,chainId:t.chainId,network:t.network,address:t.address,block:t.block,
   scannedAt:new Date().toISOString(),token:t.token,
   totalSupplyRaw:t.totalSupplyRaw,burnAddressRaw:t.burnAddressRaw,
@@ -44,7 +47,7 @@ async function token({network='ethereum',address}){
    burnAddressPct:supply.fields.burnAddressPct}};
 }
 async function discover({network='ethereum',query}){
- const cache=network==='ethereum'?ethCache:rhCache;
+ const cache=network==='ethereum'?ethCache:network==='arc'?arcCache:rhCache;
  let response,providerError=false;
  try{response=await cache.find(query)}
  catch(error){

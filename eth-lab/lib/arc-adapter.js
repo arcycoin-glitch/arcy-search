@@ -43,9 +43,16 @@ function supply(base){
  }};
 }
 async function holders({address}={}){
- // Uses only cryptographically signed COMPLETE historical snapshots.
- // No durable holder worker, private storage or indexing runs in this request.
- return require('./arc-holder-publication').load(address);
+ // Cryptographically signed COMPLETE snapshots always take precedence.
+ // When none is available, a current explorer count may be shown, but
+ // whale percentages remain NOT VERIFIED (never derived from a partial list).
+ const signed=await require('./arc-holder-publication').load(address);
+ if(signed.fields?.holderCount?.dataState==='DATA_FOUND')return signed;
+ const reported=await require('./arc-holder-count').fetchCount(address);
+ if(!reported)return signed;
+ return {...signed,
+  description:'Arc Blockscout current holder count; whale metrics require signed, reconciled COMPLETE publication.',
+  fields:{...signed.fields,holderCount:reported}};
 }
 async function activity({address},cardId){
  const response=await marketFor(address);

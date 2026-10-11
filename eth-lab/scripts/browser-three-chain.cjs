@@ -63,6 +63,14 @@ async function main(){
     if(u.pathname==='/api/report'){
      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(report(network))});
     }
+    if(u.pathname==='/api/chart'){
+     const networkId=network==='ethereum'?'eth':'arc';
+     return route.fulfill({status:200,contentType:'application/json',
+      body:JSON.stringify({ok:true,network,chainId:chainIds[network],address:addr,
+       source:'GeckoTerminal',sourceUrl:'https://www.geckoterminal.com/'+networkId+'/pools/0x'+
+        'c'.repeat(40),range:'30D',lastCandleTime:1728000000,
+       points:[{time:1727827200,close:1},{time:1727913600,close:1.04},{time:1728000000,close:1.02}]})});
+    }
     if(u.pathname==='/api/discover'){
      return route.fulfill({status:200,contentType:'application/json',
       body:JSON.stringify({ok:true,network,chainId:chainIds[network],
@@ -99,7 +107,9 @@ async function main(){
    assert.match(metrics,/1\.235B/);
    assert.ok(!metrics.includes('0.000000031234'),'Small price must be compact in summary');
    assert.ok(await page.locator('.exactNumber').count()>0,'Unrounded source values stay available');
-   assert.match(await page.locator('#chartNote').innerText(),/No exact-chain price history/);
+   await page.waitForSelector('#chartPlot svg');
+   assert.match(await page.locator('#chartNote').innerText(),/GeckoTerminal/);
+   assert.equal(await page.locator('#marketLink').isVisible(),true);
    for(const [network,label] of [['ethereum','Ethereum'],['robinhood','Robinhood Chain'],['arc','Arc']]){
     await page.locator('#backSearch').click();
     assert.equal(await page.locator('#discovery').isVisible(),true);

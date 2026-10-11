@@ -273,6 +273,22 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
 @media(max-width:650px){.burn-facts{grid-template-columns:1fr 1fr;gap:9px}
  .burn-facts>div{padding:14px}.burn-facts strong{font-size:20px}
  .burn-facts>div:last-child{grid-column:1/-1}}
+
+/* Human-readable provenance, source first; raw proofs remain an advanced disclosure. */
+.proof-panel{border-top:1px solid rgba(128,196,218,.15);margin-top:16px;padding-top:3px}
+.proof-panel>summary{font-size:12px;color:#9fd1de;font-weight:700;cursor:pointer;padding:12px 0}
+.proof-list{display:grid;gap:8px;margin-top:3px}
+.proof-entry{background:#091928;border:1px solid rgba(133,194,215,.14);border-radius:10px;padding:11px 12px;min-width:0}
+.proof-entry-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.proof-entry strong{font-size:11px;color:#d1edf5;line-height:1.4}
+.proof-state{color:#75d9bf;font-size:9px;white-space:nowrap;letter-spacing:.04em}
+.proof-state.unverified{color:#aeb3bd}
+.proof-entry p{font-size:10px;color:#8caabb;overflow-wrap:anywhere;line-height:1.6;margin:5px 0 0}
+.proof-entry .proof-value{color:#c8e4ee}
+.proof-entry a{display:inline-block;color:#80cfe2;font-size:10px;margin-top:8px;text-underline-offset:3px}
+.advanced-proof{margin-top:13px}
+.advanced-proof>summary{color:#8daeba;cursor:pointer;font-size:11px}
+.advanced-proof pre{font-size:10px;white-space:pre-wrap;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -525,12 +541,49 @@ function render(report){
     }
     section.append(status);
     if(card){
-      const details=document.createElement('details');
-      const summary=document.createElement('summary');
-      summary.textContent='View Evidence';
-      const pre=document.createElement('pre');
-      pre.textContent=JSON.stringify(card,null,2);
-      details.append(summary,pre);
+      const details=document.createElement('details');details.className='proof-panel';
+      const summary=document.createElement('summary');summary.textContent='View sources & evidence';
+      const proofList=document.createElement('div');proofList.className='proof-list';
+      for(const [key,label] of spec.fields){
+        const field=card.fields[key];if(!field)continue;
+        const block=document.createElement('div');block.className='proof-entry';
+        const header=document.createElement('div');header.className='proof-entry-head';
+        const fieldTitle=document.createElement('strong');fieldTitle.textContent=label;
+        const stage=document.createElement('span');stage.className='proof-state';
+        stage.textContent=field.dataState==='DATA_FOUND'?'SOURCE BACKED':'NOT VERIFIED';
+        if(field.dataState!=='DATA_FOUND')stage.classList.add('unverified');
+        header.append(fieldTitle,stage);block.append(header);
+        const source=document.createElement('p');
+        const proof=Array.isArray(field.evidence)?field.evidence[0]:null;
+        const anchor=proof?.block||proof?.atBlock||null;
+        source.textContent=(field.source||'Source unavailable')+
+         (typeof anchor==='string'&&/^0x[0-9a-f]+$/i.test(anchor)?' · Block '+BigInt(anchor).toString():'');
+        block.append(source);
+        if(field.dataState==='DATA_FOUND'){
+         const raw=document.createElement('p');raw.className='proof-value';
+         raw.textContent='Full value: '+metricFormat.full(field.value,key,key==='valuation'?field.kind:null);
+         block.append(raw);
+        }else{
+         const why=document.createElement('p');why.textContent=shortReason(field);block.append(why);
+        }
+        const url=typeof proof?.sourceUrl==='string'?proof.sourceUrl:
+         typeof proof?.url==='string'?proof.url:null;
+        if(url){
+         try{
+          const link=new URL(url);
+          if(link.protocol==='https:'&&!link.username&&!link.password&&!link.port&&link.href.length<700){
+           const a=document.createElement('a');a.href=link.href;a.target='_blank';
+           a.rel='noopener noreferrer';a.textContent='Open primary source ↗';block.append(a);
+          }
+         }catch{}
+        }
+        proofList.append(block);
+      }
+      details.append(summary,proofList);
+      const advanced=document.createElement('details');advanced.className='advanced-proof';
+      const more=document.createElement('summary');more.textContent='Technical evidence JSON';
+      const pre=document.createElement('pre');pre.textContent=JSON.stringify(card,null,2);
+      advanced.append(more,pre);details.append(advanced);
       section.append(details);
     }
     root.append(section);

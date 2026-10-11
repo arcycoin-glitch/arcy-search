@@ -20,7 +20,7 @@ test('Gecko history requires exact chain and complete address, never ticker-only
  assert.equal(price.choosePool(body(),'arc',addr),pool);
  assert.equal(price.choosePool(body(),'eth',addr),'0x'+'d'.repeat(40));
  assert.equal(price.choosePool({data:[body().data[1]]},'arc',addr),null);
- assert.equal(price.choosePool({data:null},'arc',addr),null);
+ assert.throws(()=>price.choosePool({data:null},'arc',addr),/Invalid pool response/);
  assert.throws(()=>price.parseCandles({...candles(),meta:{base:{address:other},quote:{address:other}}},addr,now),/identity/);
 });
 test('Historical chart request pins returned candles to the same Gecko contract',async()=>{

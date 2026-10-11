@@ -45,6 +45,7 @@ test('unknown tickers show three safely illustrated candidates with all others e
  assert.match(html,/for\(const candidate of candidates\.slice\(3\)\)others\.append\(candidateElement\(candidate\)\)/);
  assert.match(html,/const img=document\.createElement\('img'\)/);
  assert.match(html,/img\.referrerPolicy='no-referrer'/);
- assert.match(html,/const logo=safeCandidateImage\(item\.logoUrl\)/);
+ assert.match(html,/const logo=displayLogo\(item\.logoUrl,network,item\.address\)/);
  assert.match(html,/Logo is not proof of identity/);
+ assert.match(html,/address\.toLowerCase\(\)===ARCY_OFFICIAL_PROJECT_CONTRACT/);
 });

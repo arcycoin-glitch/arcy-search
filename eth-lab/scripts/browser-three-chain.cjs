@@ -115,6 +115,16 @@ async function main(){
    assert.equal(await page.locator('#discovery').isVisible(),true);
    assert.equal(await page.locator('#tokenDetail').isVisible(),false);
    assert.match(await page.locator('.hero h2').innerText(),/Know what you're buying/);
+   // The canonical owl PNG is stored in the new repository, not a generated substitute.
+   const mascot=page.locator('.hero-mascot img');
+   assert.equal(await mascot.count(),1);
+   assert.match(await mascot.getAttribute('alt'),/original blue-and-white owl/i);
+   assert.equal(await mascot.getAttribute('src'),'/assets/hero-arcy.png');
+   await mascot.evaluate(img=>img.decode());
+   const natural=await mascot.evaluate(img=>({width:img.naturalWidth,height:img.naturalHeight}));
+   assert.ok(natural.width>0&&natural.height>0,'ARCY owl image must load successfully');
+   assert.equal(await page.locator('link[rel="icon"]').getAttribute('href'),'/assets/hero-arcy.png');
+
    await page.locator('#address').fill(addr);
    await page.locator('#go').click();
    await page.waitForURL('**/token/arc/'+addr);

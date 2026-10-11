@@ -289,6 +289,14 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
 .advanced-proof{margin-top:13px}
 .advanced-proof>summary{color:#8daeba;cursor:pointer;font-size:11px}
 .advanced-proof pre{font-size:10px;white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* Quiet, unmistakable paths to evidence beneath the premium search box. */
+.home-entry-links{display:flex;justify-content:center;align-items:center;gap:clamp(15px,4vw,32px);
+ margin:14px 0 0;padding:0 12px;flex-wrap:wrap}
+.home-entry-links a{font-size:12px;color:#9bc8d9;text-underline-offset:4px;text-decoration:none}
+.home-entry-links a:hover,.home-entry-links a:focus-visible{color:#e2f8ff;text-decoration:underline}
+#arcyBurn{scroll-margin-top:24px}
+@media(max-width:420px){.home-entry-links{gap:16px}.home-entry-links a{font-size:11px}}
 </style>
 </head>
 <body>
@@ -327,6 +335,10 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
 </div>
 <div id="matches" class="results" hidden aria-live="polite"></div>
 <p id="state" role="status" aria-live="polite">Select a network, then search a token name, symbol, or contract. Name matches are not issuer verification.</p>
+<nav class="home-entry-links" aria-label="Quick research navigation">
+ <a href="/token/arc/0x73e5f588d27d6b5ec89c89c82692d1e7fecbd38b">Explore ARCY analysis ↗</a>
+ <a href="#arcyBurn">View verified ARCY data ↓</a>
+</nav>
 <section class="home-section burn-home" id="arcyBurn" aria-labelledby="burnHeading">
  <div class="section-kicker">ARCY · TRANSPARENT TOKEN DATA</div>
  <div class="home-heading"><h2 id="burnHeading">Buyback & Burn</h2>

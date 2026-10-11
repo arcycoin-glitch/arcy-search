@@ -31,4 +31,8 @@
 
 ## Progress
 - Three-chain search, detailed token pages, verified exact-source historical chart, compact figures, official static owl, navy network picker and original greeting MP4 are staged in the isolated testing branch.
-- Burn, unlock, Pulse, swap and research production-parity integration are **not completed** just because documented here.
+- Source-backed ARCY Burn holdings summary, issuer-confirmed-vs-calendar Unlocks, official-first-party Weekly Pulse, Arc prefilled Uniswap external link, and Research X/GitHub launch links are implemented in the test branch.
+- **Still incomplete:** lifetime onchain buyback transaction counter (current custody is not lifetime burns), durable publisher/last edition cache, issuer-confirmed unlock coverage, the full Research #001–#029 article archive, signed COMPLETE holder worker feed, validated LP/tax roles, all-network history for Robinhood, commercial provider permission, deployment E2E and rollback test.
+- **Real 3-chain coverage 2026-10-11:** ARC ARCY 11/20 source-backed, Ethereum USDC 12/20, Robinhood APLD 3/20. See GitHub Actions run 38146687892. Unsupported metrics remain NOT VERIFIED.
+- First-party ARCY contract is now explicitly documented with a provenance link to old official website repository, but identity verification **does not establish investment safety**.
+- A public Arcscan concentration API was investigated but returned HTTP 530 Cloudflare Tunnel errors for 6/6 probes; no reported concentration was fabricated.

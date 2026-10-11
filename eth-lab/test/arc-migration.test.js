@@ -109,12 +109,14 @@ test('Arc name candidates are retained by final identity ranking, never falsely 
   {network:'arc',chainId:5042,address:ADDR,name:'ARCY',symbol:'ARCY',source:'GeckoTerminal',
    logoUrl:'https://assets.geckoterminal.com/my-token'},
   {network:'ethereum',chainId:1,address:ALT,name:'ARCY',symbol:'ARCY',source:'CoinGecko'}]);
- assert.equal(a.length,1);
+ assert.equal(a.length,2);
  assert.equal(a[0].chainId,5042);
  assert.equal(a[0].network,'arc');
- assert.equal(a[0].identity.status,'NOT_VERIFIED');
- assert.equal(a[0].logoUrl,'https://assets.geckoterminal.com/my-token');
- assert.equal(a[0].identityVerified,false);
+ assert.equal(a[0].identity.status,'OFFICIAL_CONTRACT_MATCHED');
+ assert.equal(a[1].address,ADDR);
+ assert.equal(a[1].identity.status,'NOT_VERIFIED');
+ assert.equal(a[1].logoUrl,'https://assets.geckoterminal.com/my-token');
+ assert.equal(a[1].identityVerified,false);
 });
 
 test('first-party ARCY site pins one exact Arc contract without blessing copycats',()=>{

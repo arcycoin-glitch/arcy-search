@@ -91,6 +91,9 @@ async function main(){
    assert.equal(await page.locator('#quickFacts .quick').count(),3);
    assert.equal(await page.locator('#cards .card').count(),5);
    assert.equal(await page.locator('#cards .metric').count(),20);
+   assert.equal(await page.locator('#deepResearch').getAttribute('open'),null);
+   assert.equal(await page.locator('#moreResearch').getAttribute('open'),null);
+   await page.locator('#deepResearch > summary').click();
    const metrics=await page.locator('#cards').innerText();
    assert.match(metrics,/\$3\.123e-8/);
    assert.match(metrics,/1\.235B/);

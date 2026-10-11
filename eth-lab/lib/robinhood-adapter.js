@@ -1,5 +1,6 @@
 'use strict';
 const {readJson}=require('./http');
+const {safeLogoUrl}=require('./token-image');
 const {chain}=require('./chains');
 const {ADDRESS}=require('./eth');
 const {uint,units}=require('./eth');
@@ -142,7 +143,8 @@ async function discover({query}){
      if(!ADDRESS.test(address)||!(
       symbol.toLocaleLowerCase('en-US').includes(lower)||name.toLocaleLowerCase('en-US').includes(lower)))continue;
      candidates.push({chainId:cfg.chainId,network:cfg.id,address,symbol,name,
-      source:'DexScreener',registryMatched:false});
+      source:'DexScreener',registryMatched:false,
+      logoUrl:token===pair.baseToken?safeLogoUrl(pair.info?.imageUrl):null});
     }
    }
   }

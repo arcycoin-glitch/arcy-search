@@ -98,8 +98,11 @@ test('Arc token discovery never promotes matching names on foreign chains',async
   assert.equal(matches[0].chainId,5042);
   assert.equal(matches[0].registryMatched,false);
   const ranked=require('../lib/token-identity').rank('arc','ARCY',matches);
-  assert.equal(ranked.length,1);
-  assert.equal(ranked[0].identity.status,'NOT_VERIFIED');
+  assert.equal(ranked.length,2);
+  assert.equal(ranked[0].address,'0x73e5f588d27d6b5ec89c89c82692d1e7fecbd38b');
+  assert.equal(ranked[0].identity.status,'OFFICIAL_CONTRACT_MATCHED');
+  assert.equal(ranked[1].address,A.toLowerCase());
+  assert.equal(ranked[1].identity.status,'NOT_VERIFIED');
  }finally{global.fetch=prev}
 });
 

@@ -63,6 +63,16 @@ async function main(){
     if(u.pathname==='/api/report'){
      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(report(network))});
     }
+    if(u.pathname==='/api/unlocks'){
+     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      ok:true,status:'CONFIRMED_EVENTS',generatedAt:'2026-10-11T12:00:00Z',
+      confirmed:[{name:'Api3',symbol:'API3',date:'2026-10-20',amount:'1.5M API3',
+       verification:'project-confirmed',logoUrl:null,
+       sourceUrl:'https://www.api3.org/tokenomics'}],
+      reported:[{name:'Example Calendar',symbol:'EX',date:'2026-10-24',amount:'2M EX',
+       verification:'source-published',logoUrl:null,
+       sourceUrl:'https://api.coinbell.in/token-unlocks?sort=soonest&window=30'}]})});
+    }
     if(u.pathname==='/api/pulse'){
      return route.fulfill({status:200,contentType:'application/json',
       body:JSON.stringify({ok:true,number:3,status:'UPDATED',checkedAt:'2026-10-11T14:00:00Z',
@@ -136,6 +146,13 @@ async function main(){
    assert.equal(await page.locator('#burnSupply').innerText(),'1.235B');
    assert.equal(await page.locator('#burnHeld').innerText(),'70.43M');
    assert.match(await page.locator('#burnProof').innerText(),/Current burn-address balances are NOT proof/);
+   await page.locator('#tokenUnlocks').scrollIntoViewIfNeeded();
+   await page.waitForSelector('#unlockConfirmed .unlock-entry');
+   assert.equal(await page.locator('#unlockConfirmed .unlock-entry').count(),1);
+   assert.match(await page.locator('#unlockConfirmed').innerText(),/Api3/);
+   assert.equal(await page.locator('#unlockReported').getAttribute('hidden'),null);
+   assert.equal(await page.locator('#unlockReportedRows .unlock-entry').count(),1);
+   assert.match(await page.locator('#unlockReported > summary').innerText(),/Not issuer confirmed/);
    await page.locator('#arcPulse').scrollIntoViewIfNeeded();
    await page.waitForSelector('.pulse-entry');
    assert.equal(await page.locator('.pulse-entry').count(),1);

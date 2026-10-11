@@ -92,8 +92,8 @@ async function main(){
    assert.equal(await page.locator('#cards .card').count(),5);
    assert.equal(await page.locator('#cards .metric').count(),20);
    const metrics=await page.locator('#cards').innerText();
-   assert.match(metrics,/\\$3\\.123e-8/);
-   assert.match(metrics,/1\\.235B/);
+   assert.match(metrics,/\$3\.123e-8/);
+   assert.match(metrics,/1\.235B/);
    assert.ok(!metrics.includes('0.000000031234'),'Small price must be compact in summary');
    assert.ok(await page.locator('.exactNumber').count()>0,'Unrounded source values stay available');
    assert.match(await page.locator('#chartNote').innerText(),/No exact-chain price history/);

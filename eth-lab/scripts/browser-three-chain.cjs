@@ -63,6 +63,16 @@ async function main(){
     if(u.pathname==='/api/report'){
      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(report(network))});
     }
+    if(u.pathname==='/api/token'){
+     const mainnetAddress='0x73e5f588d27d6b5ec89c89c82692d1e7fecbd38b';
+     return route.fulfill({status:200,contentType:'application/json',
+      body:JSON.stringify({ok:true,chainId:5042,network:'arc',address:mainnetAddress,block:'0x12345',
+       fields:{
+        totalSupply:{...sourceField('totalSupply','arc'),value:'1234567890'},
+        burnAddressBalance:{...sourceField('burnAddressBalance','arc'),value:'70429498'},
+        burnAddressPct:{...sourceField('burnAddressPct','arc'),value:7.0429498}
+       }})});
+    }
     if(u.pathname==='/api/chart'){
      const networkId=network==='ethereum'?'eth':'arc';
      return route.fulfill({status:200,contentType:'application/json',
@@ -114,6 +124,12 @@ async function main(){
    assert.equal(await page.locator('footer a[href*="github.com"]').count(),1);
    assert.equal(await page.locator('#discovery').isVisible(),true);
    assert.equal(await page.locator('#tokenDetail').isVisible(),false);
+   await page.locator('#arcyBurn').scrollIntoViewIfNeeded();
+   await page.waitForFunction(()=>document.querySelector('#burnProof').textContent.includes('3/3 source-backed'));
+   assert.equal(await page.locator('#burnSupply').innerText(),'1.235B');
+   assert.equal(await page.locator('#burnHeld').innerText(),'70.43M');
+   assert.match(await page.locator('#burnProof').innerText(),/Current burn-address balances are NOT proof/);
+   await page.locator('.hero').scrollIntoViewIfNeeded();
    assert.match(await page.locator('.hero h2').innerText(),/Know what you're buying/);
    // The canonical owl PNG is stored in the new repository, not a generated substitute.
    const mascot=page.locator('.hero-mascot img');

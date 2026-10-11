@@ -5,6 +5,7 @@ const ethereumReport=require('./report');
 const ethereumDiscover=require('./discover');
 const ethereumToken=require('./eth');
 const robinhood=require('./robinhood-adapter');
+const arc=require('./arc-adapter');
 const chains=require('./chains');
 const identities=require('./token-identity');
 const {createCache}=require('./discovery-cache');
@@ -17,7 +18,8 @@ const ethereumAdapter={
  async inspectCard({base,cardId}){return base.fullReport.cards[cardId]},
  async discover({query}){return (await ethereumDiscover.discover(query)).map(x=>({...x,network:'ethereum',chainId:1}))}
 };
-const engine=createEngine({ethereum:ethereumAdapter,robinhood});
+const engine=createEngine({arc,ethereum:ethereumAdapter,robinhood});
+const arcCache=createCache(async q=>engine.discover({network:'arc',query:q}).then(x=>x.candidates));
 const ethCache=createCache(async q=>engine.discover({network:'ethereum',query:q}).then(x=>x.candidates));
 const rhCache=createCache(async q=>engine.discover({network:'robinhood',query:q}).then(x=>x.candidates));
 function parseChain(raw){
@@ -33,6 +35,19 @@ async function report({network='ethereum',address}){
 }
 async function token({network='ethereum',address}){
  if(network==='ethereum')return ethereumToken.inspect(address);
+ if(network==='arc'){
+  if(typeof address!=='string'||!/^0x[0-9a-f]{40}$/i.test(address))
+   throw Error('Invalid Arc token address');
+  const normalized=address.toLowerCase();
+  const base=await arc.inspectToken({address:normalized});
+  const supply=await arc.supply(normalized);
+  return {ok:true,chainId:5042,network:'arc',address:normalized,block:base.block,
+   scannedAt:new Date().toISOString(),token:base.token,
+   fields:{totalSupply:supply.fields.totalSupply,
+    circulatingSupply:supply.fields.circulatingSupply,
+    burnAddressBalance:supply.fields.burnAddressBalance,
+    burnAddressPct:supply.fields.burnAddressPct}};
+ }
  const t=await robinhood.inspectToken({address});
  const supply=await robinhood.supply(t);
  return {ok:true,chainId:t.chainId,network:t.network,address:t.address,block:t.block,
@@ -44,7 +59,7 @@ async function token({network='ethereum',address}){
    burnAddressPct:supply.fields.burnAddressPct}};
 }
 async function discover({network='ethereum',query}){
- const cache=network==='ethereum'?ethCache:rhCache;
+ const cache=network==='ethereum'?ethCache:network==='arc'?arcCache:rhCache;
  let response,providerError=false;
  try{response=await cache.find(query)}
  catch(error){

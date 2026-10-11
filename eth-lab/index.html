@@ -163,6 +163,11 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
 @media(max-width:700px){main{padding:20px 15px 64px}header{margin-bottom:30px;padding-bottom:18px}.hero{padding:47px 0 25px}.detail-quick{grid-template-columns:repeat(2,minmax(0,1fr))}.grid,.research-tools{grid-template-columns:1fr}.chart-shell{padding:19px}.detail-toolbar{flex-wrap:wrap}.chip{display:none}}
 @media(max-width:400px){.detail-quick{grid-template-columns:1fr 1fr}.quick{padding:13px}.quick-value{font-size:19px}.hero h2{font-size:36px}}
 
+#moreResearch{border:1px solid var(--stroke);border-radius:15px;padding:0 20px;background:#081927;margin-top:18px}
+#moreResearch>summary{cursor:pointer;padding:18px 2px;list-style:none;color:#99c4d4;font-size:12px;font-weight:700}
+#moreResearch>summary::after{content:' +';float:right}
+#moreResearch[open]>summary::after{content:' −'}
+#moreResearch .research-tools{margin:0 0 20px}
 </style>
 </head>
 <body>
@@ -214,16 +219,18 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
 </div>
 <div id="evidenceCount" class="sourceCount" aria-live="polite"></div>
 <p class="buyers">Contract confirmation is not an investment safety rating. Missing evidence is never treated as proof of safety.</p>
-<details id="deepResearch" open>
+<details id="deepResearch">
  <summary>Explore the full on-chain report · 20 checks</summary>
  <div id="cards" class="grid"></div>
 </details>
+<details id="moreResearch"><summary>More research tools · Show when needed</summary>
 <div class="research-tools" aria-label="Further research">
  <div class="research-tool"><h3>Before You Buy</h3><p id="beforeBuyNote">Review owner authority, mint permissions, trading taxes and liquidity permissions with exact-contract evidence.</p><div class="state">ONLY VERIFIED SIGNALS</div></div>
  <div class="research-tool"><h3>Exit Reality</h3><p>Execution quotes and price impact require a verified routing and simulation engine. No guaranteed exit amounts are shown.</p><div class="state">SIMULATION NOT YET AVAILABLE</div></div>
  <div class="research-tool"><h3>What Changed?</h3><p>Historical comparisons will use pinned, timestamped snapshots. We do not infer whale activity from incomplete wallet records.</p><div class="state">HISTORICAL COMPARISON PENDING</div></div>
  <div class="research-tool"><h3>Claim vs Reality</h3><p>We compare first-party project claims with on-chain proof. Unsupported marketing claims will not become facts.</p><div class="state">SOURCE MATCHING IN PROGRESS</div></div>
 </div>
+</details>
 </section>
 <footer>Evidence is token and network specific. NOT VERIFIED does not mean false or zero. This tool does not execute transactions or provide investment advice.<div class="source-link"><a href="https://github.com/arcycoin-glitch/arcy-search/tree/feature/three-chain-release-lab-20261011/eth-lab" target="_blank" rel="noopener noreferrer" aria-label="Inspect ARCY SEARCH source code on GitHub">GitHub · View source ↗</a></div></footer>
 </main>

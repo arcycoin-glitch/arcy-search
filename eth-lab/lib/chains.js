@@ -2,6 +2,15 @@
 // ARCY SEARCH multichain lab foundations.
 // This module is opt-in. The existing Ethereum endpoints remain unchanged.
 const CHAIN_CONFIG=Object.freeze({
+ arc:Object.freeze({
+  id:'arc',label:'Arc',chainId:5042,rpcEnv:'ARC_RPC_URL',
+  publicRpc:'https://rpc.mainnet.arc.io',
+  explorer:'https://arc-scan.org',
+  blockscoutTokens:null,
+  dexScreenerChainId:'arc',
+  goPlusChainId:null,
+  stockTokenRegistry:null
+ }),
  ethereum:Object.freeze({
   id:'ethereum',label:'Ethereum',chainId:1,rpcEnv:'ETH_RPC_URL',
   publicRpc:'https://ethereum-rpc.publicnode.com',

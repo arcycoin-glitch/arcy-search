@@ -1,0 +1,39 @@
+name: Three-Chain ARCY SEARCH checks
+on:
+  push:
+    branches: [feature/three-chain-release-lab-20261011]
+    paths:
+      - 'eth-lab/**'
+      - '.github/workflows/three-chain-ci.yml'
+  pull_request:
+    branches: [multichain-lab]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: eth-lab
+    steps:
+      - name: Fetch reviewed source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Prepare Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Syntax verification
+        run: |
+          node --check lib/arc-rpc.js
+          node --check lib/arc-market.js
+          node --check lib/arc-adapter.js
+          node --check lib/chains.js
+          node --check lib/multichain-service.js
+          node --check format.js
+          node --check api/report.js
+          node --check api/discover.js
+      - name: All unit and regression tests
+        run: npm test

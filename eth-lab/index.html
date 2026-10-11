@@ -363,6 +363,69 @@ const EVM_ADDRESS=/^0x[0-9a-fA-F]{40}$/;
 const NETWORKS={arc:{id:5042,label:'Arc',explorer:'https://explorer.arc.io'},ethereum:{id:1,label:'Ethereum',explorer:'https://eth.blockscout.com'},robinhood:{id:4663,label:'Robinhood Chain',explorer:'https://robinhoodchain.blockscout.com'}};
 let searchVersion=0,activeController=null;
 const selected=()=>$('chain').value;
+const tokenPath=(network,address)=>'/token/'+network+'/'+address.toLowerCase();
+const tokenRoute=pathname=>{
+ const match=/^\/token\/(arc|ethereum|robinhood)\/(0x[0-9a-fA-F]{40})\/?$/.exec(pathname);
+ return match?{network:match[1],address:match[2].toLowerCase()}:null;
+};
+function activateHome({push=false}={}){
+ cancelPending();
+ $('tokenDetail').hidden=true;$('discovery').hidden=false;
+ $('asset').replaceChildren();clearIdentity();render(null);
+ $('quickFacts').replaceChildren();$('detailState').textContent='';
+ $('address').value='';clearMatches();
+ $('state').textContent='Search a token by name, symbol or full address. Names and logos never prove identity.';
+ if(push&&location.pathname!=='/')history.pushState({},'','/');
+ document.title='ARCY SEARCH — Research before you buy';
+}
+function activateDetail(address,network,{push=true,identity=null}={}){
+ if(!EVM_ADDRESS.test(address)||!Object.hasOwn(NETWORKS,network))return;
+ cancelPending();
+ const canonical=tokenPath(network,address);
+ if(push&&location.pathname!==canonical)history.pushState({},'',canonical);
+ $('chain').value=network;
+ $('discovery').hidden=true;$('tokenDetail').hidden=false;
+ $('asset').replaceChildren();clearIdentity();render(null);
+ $('quickFacts').replaceChildren();
+ $('detailState').textContent='Reading '+NETWORKS[network].label+' contract evidence…';
+ $('chartNote').textContent='No exact-chain price history has been verified for this contract. Never rely on fabricated chart data.';
+ $('marketLink').hidden=true;
+ document.title='Token research · '+NETWORKS[network].label+' · ARCY SEARCH';
+ window.scrollTo({top:0,behavior:'instant'});
+ void scanAddress(address.toLowerCase(),network,searchVersion,identity);
+}
+function restoreRoute(){
+ const route=tokenRoute(location.pathname);
+ if(route)activateDetail(route.address,route.network,{push:false});
+ else activateHome();
+}
+function renderQuickFacts(report){
+ const summary=[
+  ['PRICE',report.cards?.activity?.fields?.priceUsd,'priceUsd'],
+  ['TRACKED LIQUIDITY',report.cards?.liquidity?.fields?.liquidityUsd,'liquidityUsd'],
+  ['HOLDER COUNT',report.cards?.holders?.fields?.holderCount,'holderCount']
+ ];
+ const root=$('quickFacts');root.replaceChildren();
+ for(const [label,field,key] of summary){
+  const box=document.createElement('div');box.className='quick';
+  const a=document.createElement('span');a.className='quick-label';a.textContent=label;
+  const b=document.createElement('div');b.className='quick-value';
+  const verified=field?.dataState==='DATA_FOUND'&&field?.value!==null&&field?.value!==undefined;
+  b.textContent=verified?metricFormat.display(field.value,key,field.kind):'NOT VERIFIED';
+  if(!verified)b.style.fontSize='14px';
+  const note=document.createElement('small');
+  note.textContent=verified?(field.source||'Source reported'):'Source evidence unavailable';
+  box.append(a,b,note);root.append(box);
+ }
+ const tax=report.cards?.mechanics?.fields?.tradingTaxes;
+ const mint=report.cards?.mechanics?.fields?.mintCapability;
+ const control=report.cards?.mechanics?.fields?.ownerAdmin;
+ const found=[tax,mint,control].filter(f=>f?.dataState==='DATA_FOUND'&&f.value!==null);
+ $('beforeBuyNote').textContent=found.length?
+  found.length+' of 3 contract safety checks have source evidence. Open the full report to review the exact control and fee findings.':
+  'Taxes, mint capability and admin authority are not fully verified. Unknown is never considered safe.';
+}
+
 function cancelPending(){
  searchVersion++;
  if(activeController){activeController.abort();activeController=null}
@@ -403,7 +466,7 @@ function chainChanged(){
  $('address').value='';
  const label=NETWORKS[selected()].label;
  $('address').placeholder='Search '+label+' token name, ticker or 0x contract';
- $('state').textContent='Selected '+label+'. Token identities and evidence must match this exact chain.';
+ $('state').textContent='Selected '+label+'. Contract identity and evidence must match this exact chain.';
  $('networkNote').textContent=label+' · Mainnet · Read only';
 }
 function requestController(){
@@ -418,7 +481,8 @@ async function scanAddress(address,network=selected(),version=searchVersion,chos
  const info=NETWORKS[network],button=$('go');
  if(!info)return;
  button.disabled=true;clearMatches();$('asset').replaceChildren();clearIdentity();render(null);
- $('state').textContent='Reading '+info.label+' on-chain and external evidence…';
+ $('quickFacts').replaceChildren();
+ $('detailState').textContent='Reading '+info.label+' on-chain and external evidence…';
  const controller=requestController();
  try{
   const url='/api/report?'+new URLSearchParams({address,chain:network}).toString();
@@ -454,12 +518,13 @@ async function scanAddress(address,network=selected(),version=searchVersion,chos
   const identity=data.tokenIdentity?.status!=='NOT_VERIFIED'?data.tokenIdentity:
    localIndex||data.tokenIdentity;
   renderIdentity(identity,network);
-  render(data);
-  $('state').textContent='Chain '+info.id+' · Snapshot complete · '+data.scannedAt+' · Unsupported metrics remain NOT VERIFIED.';
+  render(data);renderQuickFacts(data);
+  document.title=(asset.name||asset.symbol||'Token')+' ('+(asset.symbol||'?')+') · ARCY SEARCH';
+  $('detailState').textContent='Chain '+info.id+' · Snapshot complete · '+data.scannedAt+' · Unsupported metrics remain NOT VERIFIED.';
  }catch(error){
   if(version!==searchVersion||network!==selected()||controller.signal.aborted)return;
-  $('state').textContent='Scan unavailable: '+String(error.message).slice(0,150);
-  $('asset').replaceChildren();clearIdentity();render(null);
+  $('detailState').textContent='Scan unavailable: '+String(error.message).slice(0,150);
+  $('asset').replaceChildren();clearIdentity();render(null);$('quickFacts').replaceChildren();
  }finally{if(version===searchVersion&&network===selected()){button.disabled=false;if(activeController===controller)activeController=null}}
 }
 function safeCandidateImage(raw){
@@ -529,8 +594,7 @@ function showCandidates(data,network,version){
   option.append(detail,choose);
   option.addEventListener('click',()=>{
    if(version!==searchVersion||network!==selected())return;
-   cancelPending();$('address').value=item.address;
-   void scanAddress(item.address,network,searchVersion,item.identity);
+   activateDetail(item.address,network,{identity:item.identity});
   });
   return option;
  }
@@ -562,7 +626,7 @@ async function searchOrScan(){
  const q=$('address').value.trim(),network=selected();
  cancelPending();
  const version=searchVersion;clearMatches();
- if(EVM_ADDRESS.test(q)){await scanAddress(q,network,version);return}
+ if(EVM_ADDRESS.test(q)){activateDetail(q,network);return}
  if(q.length<2||q.length>48||/^0x/i.test(q)){
   $('state').textContent='Enter a token name (2–48 characters) or a full contract address.';return;
  }
@@ -588,6 +652,17 @@ $('chain').addEventListener('change',chainChanged);
 $('go').addEventListener('click',searchOrScan);
 $('address').addEventListener('keydown',event=>{if(event.key==='Enter')void searchOrScan()});
 $('address').addEventListener('input',()=>{cancelPending();clearMatches();$('asset').replaceChildren();clearIdentity();render(null)});
+$('backSearch').addEventListener('click',()=>activateHome({push:true}));
+$('copyLink').addEventListener('click',async()=>{
+ try{
+  await navigator.clipboard.writeText(location.href);
+  $('shareStatus').textContent='Copied';
+ }catch{
+  $('shareStatus').textContent='Link: '+location.href;
+ }
+});
+window.addEventListener('popstate',restoreRoute);
+restoreRoute();
 
 </script>
 </body>

@@ -158,6 +158,14 @@ async function main(){
    assert.equal(await page.locator('.pulse-entry').count(),1);
    assert.match(await page.locator('.pulse-entry').innerText(),/Arc Mainnet infrastructure report/);
    assert.equal(await page.locator('.pulse-entry').getAttribute('href'),'https://www.arc.io/blog/developer-update');
+   const swap=page.locator('#arcySwap a.premium-action');
+   const swapURL=new URL(await swap.getAttribute('href'));
+   assert.equal(swapURL.origin,'https://app.uniswap.org');
+   assert.equal(swapURL.pathname,'/swap');
+   assert.equal(swapURL.searchParams.get('chain'),'arc');
+   assert.equal(swapURL.searchParams.get('outputCurrency'),addr);
+   assert.equal(await swap.getAttribute('target'),'_blank');
+   assert.equal(await page.locator('#arcyResearch a[href="https://github.com/arcycoin-glitch/arcy-search"]').count(),1);
    await page.locator('.hero').scrollIntoViewIfNeeded();
    assert.match(await page.locator('.hero h2').innerText(),/Know what you're buying/);
    // The canonical owl PNG is stored in the new repository, not a generated substitute.

@@ -323,6 +323,17 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
  </div>
  <p class="section-status" id="burnProof" role="status" aria-live="polite">Checking chain-specific evidence when this section is visible…</p>
 </section>
+<section class="home-section" id="tokenUnlocks" aria-labelledby="unlocksHeading">
+ <div class="section-kicker">ARCY · UPCOMING TOKEN RELEASES</div>
+ <div class="home-heading"><h2 id="unlocksHeading">Token Unlocks</h2><span class="pulse-week">Next 30 days · UTC</span></div>
+ <p class="section-lead">Issuer-confirmed unlocks first. Published third-party calendar dates stay separately labelled and never masquerade as verified.</p>
+ <div id="unlockConfirmed" class="pulse-entries" aria-live="polite"></div>
+ <details id="unlockReported" class="unlock-reported" hidden>
+  <summary>View source-reported schedules · Not issuer confirmed</summary>
+  <div id="unlockReportedRows" class="pulse-entries"></div>
+ </details>
+ <p class="section-status" id="unlocksProof" role="status" aria-live="polite">Checking dated source evidence when visible…</p>
+</section>
 <section class="home-section" id="arcPulse" aria-labelledby="pulseHeading">
  <div class="section-kicker">ARCY · FIRST-PARTY SOURCES</div>
  <div class="home-heading"><h2 id="pulseHeading">Arc Weekly Pulse</h2><span id="pulseWeek" class="pulse-week">Weekly review</span></div>
@@ -377,6 +388,7 @@ footer{border-top:1px solid var(--stroke);padding-top:24px;line-height:1.9;margi
 <script src="/format.js"></script>
 <script src="/hero-greeting.js" defer></script>
 <script src="/home-pulse.js" defer></script>
+<script src="/home-unlocks.js" defer></script>
 <script>
 'use strict';
 const definitions=window.ARCYEthLabSchema;

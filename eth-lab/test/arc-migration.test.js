@@ -116,3 +116,24 @@ test('Arc name candidates are retained by final identity ranking, never falsely 
  assert.equal(a[0].logoUrl,'https://assets.geckoterminal.com/my-token');
  assert.equal(a[0].identityVerified,false);
 });
+
+test('first-party ARCY site pins one exact Arc contract without blessing copycats',()=>{
+ const {rank,verified,knownMatches}=require('../lib/token-identity');
+ const ARCY='0x73e5f588d27d6b5ec89c89c82692d1e7fecbd38b';
+ const CLONE='0x2b4623c889ae110df5c80ce679aa062631ac92ab';
+ const official=verified('arc',ARCY);
+ assert.equal(official?.status,'OFFICIAL_CONTRACT_MATCHED');
+ assert.equal(official?.issuer,'ARCY');
+ assert.equal(official?.proofUrl,'https://www.arcyusdc.xyz/');
+ assert.equal(verified('ethereum',ARCY),null);
+ assert.equal(verified('arc',CLONE),null);
+ const rows=rank('arc','ARCY',[
+  {network:'arc',chainId:5042,address:CLONE,name:'Arcy',symbol:'ARCY',source:'GeckoTerminal'},
+  {network:'arc',chainId:5042,address:ARCY,name:'Arcy',symbol:'ARCY',source:'GeckoTerminal'}
+ ]);
+ assert.equal(rows[0].address,ARCY);
+ assert.equal(rows[0].identity.status,'OFFICIAL_CONTRACT_MATCHED');
+ assert.equal(rows[1].address,CLONE);
+ assert.equal(rows[1].identity.status,'NOT_VERIFIED');
+ assert.deepEqual(knownMatches('arc','ARCY').map(x=>x.address),[ARCY]);
+});

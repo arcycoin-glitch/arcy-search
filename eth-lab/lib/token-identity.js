@@ -41,7 +41,10 @@ const OFFICIAL=Object.freeze([
   proofUrl:'https://shib.io/developers'}),
  Object.freeze({network:'ethereum',chainId:1,address:'0xa02c49da76a085e4e1ee60a6b920ddbc8db599f4',
   name:'Shiba Inu TREAT',symbol:'TREAT',issuer:'Shiba Inu',
-  proofUrl:'https://shib.io/developers'})
+  proofUrl:'https://shib.io/developers'}),
+ Object.freeze({network:'ethereum',chainId:1,address:'0xfaba6f8e4a5e8ab82f62fe7c39859fa577269be3',
+  name:'Ondo',symbol:'ONDO',issuer:'Ondo Foundation',
+  proofUrl:'https://docs.ondo.foundation/ondo-token'})
 ]);
 function verified(network,address){
  if(typeof network!=='string'||typeof address!=='string'||!ADDRESS.test(address))return null;

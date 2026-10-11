@@ -39,39 +39,64 @@
   return sign+n.whole.replace(/\B(?=(\d{3})+(?!\d))/g,',')+
    (n.fraction?'.'+n.fraction:'');
  }
+ function isZero(n){return n.whole==='0'&&!/[1-9]/.test(n.fraction)}
+ // Round decimal strings without lossy floating-point conversion.
+ function fixed(whole,fraction,places){
+  const digits=whole+(places?fraction.padEnd(places,'0').slice(0,places):'');
+  const next=fraction[places]||'0';
+  const v=BigInt(digits||'0')+(next>='5'?1n:0n);
+  const text=v.toString().padStart(places+1,'0');
+  return places?{whole:text.slice(0,-places),fraction:text.slice(-places).replace(/0+$/,'')}:
+   {whole:text,fraction:''};
+ }
+ function scientific(n){
+  const stripped=n.whole==='0'?n.fraction.replace(/^0+/,''):n.whole+n.fraction;
+  const leading=n.fraction.length-n.fraction.replace(/^0+/,'').length;
+  let exponent=n.whole==='0'?-leading-1:n.whole.length-1;
+  let significant=BigInt(stripped.slice(0,4).padEnd(4,'0'))+
+   ((stripped[4]||'0')>='5'?1n:0n);
+  if(significant===10000n){significant=1000n;exponent++}
+  const digits=significant.toString().padStart(4,'0');
+  const fraction=digits.slice(1).replace(/0+$/,'');
+  return digits[0]+(fraction?'.'+fraction:'')+'e'+(exponent>=0?'+':'')+exponent;
+ }
+ const UNIT_STEPS=[[21,'Sx'],[18,'Qi'],[15,'Q'],[12,'T'],[9,'B'],[6,'M'],[3,'K']];
  function compactNumeric(value){
   const n=parseNumeric(value);
   if(!n)return null;
-  let index=-1;
-  for(let i=0;i<SUFFIXES.length;i++)if(n.whole.length>SUFFIXES[i].power)index=i;
-  if(index===-1)return null;
-  let cents=0n;
-  for(;;){
-   const power=SUFFIXES[index].power;
-   const major=n.whole.length>power?n.whole.slice(0,-power):'0';
-   const remainder=n.whole.slice(-power).padStart(power,'0')+n.fraction;
-   const digits=(remainder+'000').slice(0,3);
-   cents=BigInt(major)*100n+BigInt(digits.slice(0,2))+(digits[2]>='5'?1n:0n);
-   // Avoid showing "1000K"; reround from the original evidence at M/B/T.
-   if(cents>=100000n&&index+1<SUFFIXES.length){index++;continue}
-   break;
+  if(isZero(n))return '0';
+  const sign=n.negative?'-':'';
+  const leading=n.fraction.length-n.fraction.replace(/^0+/,'').length;
+  const exponent=n.whole==='0'?-leading-1:n.whole.length-1;
+  if(exponent>=24||exponent< -4)return sign+scientific(n);
+  for(let i=0;i<UNIT_STEPS.length;i++){
+   const [power,suffix]=UNIT_STEPS[i];
+   if(n.whole.length<=power)continue;
+   const whole=n.whole.slice(0,-power);
+   const fraction=n.whole.slice(-power)+n.fraction;
+   const decimals=Math.min(4,Math.max(0,4-whole.length));
+   const out=fixed(whole,fraction,decimals);
+   if(out.whole.length>=4){
+    if(i===0)return sign+scientific(n);
+    return sign+'1'+UNIT_STEPS[i-1][1];
+   }
+   return sign+out.whole+(out.fraction?'.'+out.fraction:'')+suffix;
   }
-  const whole=(cents/100n).toString();
-  const fractional=(cents%100n).toString().padStart(2,'0').replace(/0+$/,'');
-  const sign=n.negative&&cents!==0n?'-':'';
-  // Tiny negative numbers are never forced to 0; they remain full precision.
-  if(cents===0n&&n.negative)return null;
-  return sign+whole+(fractional?'.'+fractional:'')+SUFFIXES[index].suffix;
+  const decimals=Math.min(4,Math.max(0,4-(n.whole==='0'?0:n.whole.length)));
+  const out=fixed(n.whole,n.fraction,decimals);
+  if(out.whole.length>=4)return sign+'1K';
+  return sign+out.whole+(out.fraction?'.'+out.fraction:'');
  }
  function display(value,key,kind){
   if(typeof value==='boolean')return value?'TRUE':'FALSE';
-  const prefix=label(kind),numeric=parseNumeric(value);
-  if(!numeric)return prefix+String(value);
-  // Percent changes and wallet shares are NOT token counts; never abbreviate.
-  if(isPercent(key))return prefix+fullNumeric(value)+'%';
-  const compact=compactNumeric(value);
-  const shown=compact||fullNumeric(value);
-  return prefix+(isUsd(key)?(shown.startsWith('-')?'-'+String.fromCharCode(36)+shown.slice(1):String.fromCharCode(36)+shown):shown);
+  const prefix=label(kind);
+  if(key==='dexPairCount'){
+   const counts=/^(\d+) DEX · (\d+) pairs$/.exec(String(value));
+   if(counts)return compactNumeric(counts[1])+' DEX · '+compactNumeric(counts[2])+' pairs';
+  }
+  const shown=compactNumeric(value);
+  if(shown===null)return prefix+String(value);
+  return prefix+(isUsd(key)?(shown.startsWith('-')?'-$'+shown.slice(1):'$'+shown):shown)+(isPercent(key)?'%':'');
  }
  function full(value,key,kind){
   if(typeof value==='boolean')return value?'TRUE':'FALSE';

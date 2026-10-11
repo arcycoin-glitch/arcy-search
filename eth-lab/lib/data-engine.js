@@ -4,6 +4,7 @@
 // All source-backed fields must identify the exact network; otherwise they fail closed.
 const schema=require('../schema');
 const {chain}=require('./chains');
+const {safeLogoUrl}=require('./token-image');
 const ADDRESS=/^0x[0-9a-f]{40}$/i;
 const VALID_STATES=new Set(['DATA_FOUND','NOT_VERIFIED','SOURCE_API_FAILED']);
 const SCHEMA_KEYS=new Map(schema.map(c=>[c.id,c.fields.map(([key])=>key)]));
@@ -96,6 +97,7 @@ function createEngine(adapters){
     safe.push({name:typeof item.name==='string'?item.name.slice(0,90):'',
      symbol:typeof item.symbol==='string'?item.symbol.slice(0,30):'',
      address,chainId:cfg.chainId,network:cfg.id,
+     logoUrl:safeLogoUrl(item.logoUrl),
      source:typeof item.source==='string'?item.source.slice(0,100):'Unverified search catalog',
      catalogCoinId:cfg.id==='ethereum'&&item.source==='CoinGecko'&&
        typeof item.catalogCoinId==='string'&&/^[a-z0-9-]{2,100}$/.test(item.catalogCoinId)?

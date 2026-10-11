@@ -78,7 +78,7 @@ function rank(network,query,candidates){
  const trustedStock=(item)=>network==='robinhood'&&item.registryMatched===true&&
   item.source==='Robinhood official asset registry';
  for(const item of candidates){
-  if(!item||item.network!==network||item.chainId!==(network==='ethereum'?1:4663))continue;
+  if(!item||item.network!==network||item.chainId!==require('./chains').chain(network).chainId)continue;
   const address=typeof item.address==='string'?item.address.toLowerCase():'';
   if(!ADDRESS.test(address))continue;
   if(ordered.has(address)){

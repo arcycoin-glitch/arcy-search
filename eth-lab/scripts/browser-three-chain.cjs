@@ -63,6 +63,13 @@ async function main(){
     if(u.pathname==='/api/report'){
      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(report(network))});
     }
+    if(u.pathname==='/api/pulse'){
+     return route.fulfill({status:200,contentType:'application/json',
+      body:JSON.stringify({ok:true,number:3,status:'UPDATED',checkedAt:'2026-10-11T14:00:00Z',
+       cards:[{owner:'OFFICIAL ARC',title:'Arc Mainnet infrastructure report',
+        publishedAt:'2026-10-10T10:00:00Z',
+        sourceUrl:'https://www.arc.io/blog/developer-update'}],coverage:{checked:5,total:5}})});
+    }
     if(u.pathname==='/api/token'){
      const mainnetAddress='0x73e5f588d27d6b5ec89c89c82692d1e7fecbd38b';
      return route.fulfill({status:200,contentType:'application/json',
@@ -129,6 +136,11 @@ async function main(){
    assert.equal(await page.locator('#burnSupply').innerText(),'1.235B');
    assert.equal(await page.locator('#burnHeld').innerText(),'70.43M');
    assert.match(await page.locator('#burnProof').innerText(),/Current burn-address balances are NOT proof/);
+   await page.locator('#arcPulse').scrollIntoViewIfNeeded();
+   await page.waitForSelector('.pulse-entry');
+   assert.equal(await page.locator('.pulse-entry').count(),1);
+   assert.match(await page.locator('.pulse-entry').innerText(),/Arc Mainnet infrastructure report/);
+   assert.equal(await page.locator('.pulse-entry').getAttribute('href'),'https://www.arc.io/blog/developer-update');
    await page.locator('.hero').scrollIntoViewIfNeeded();
    assert.match(await page.locator('.hero h2').innerText(),/Know what you're buying/);
    // The canonical owl PNG is stored in the new repository, not a generated substitute.

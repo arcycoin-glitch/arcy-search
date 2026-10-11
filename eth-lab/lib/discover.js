@@ -52,7 +52,7 @@ async function coinGeckoFallback(query){
   if(detail?.id!==coin.id)return null;
   const address=String(detail.platforms?.ethereum||'').toLowerCase();
   if(!ADDRESS.test(address))return null;
-  return {name:String(coin.name||'').slice(0,90),symbol:String(coin.symbol||'').slice(0,30),address,chainId:1,network:'Ethereum',source:'CoinGecko',identityVerified:false};
+  return {name:String(coin.name||'').slice(0,90),symbol:String(coin.symbol||'').slice(0,30),address,chainId:1,network:'Ethereum',source:'CoinGecko',catalogCoinId:coin.id,identityVerified:false};
  }));
  const result=[],seen=new Set();
  for(const detail of details)if(detail.status==='fulfilled'&&detail.value&&!seen.has(detail.value.address)){
@@ -63,22 +63,25 @@ async function coinGeckoFallback(query){
 async function discover(rawQuery){
  const q=normalizeQuery(rawQuery);
  if(!q)throw Error('Invalid discovery query');
- let market=[],marketError=null;
- try{
+ // Consult CoinGecko even when DexScreener returns many tickers; otherwise
+ // spoofed names on DEX pairs can hide the indexed main contract.
+ // Independent providers remain optional and failures never create fake proof.
+ const marketWork=(async()=>{
   const response=await fetch(SOURCE+'?q='+encodeURIComponent(q),{headers:{accept:'application/json'},signal:AbortSignal.timeout(8000)});
   if(!response.ok)throw Error('Token discovery source HTTP '+response.status);
   const json=await readJson(response,2*1024*1024);
   if(!json||typeof json!=='object'||(json.pairs!==null&&!Array.isArray(json.pairs)))throw Error('Malformed token discovery response');
-  market=parse(json.pairs||[],q);
- }catch(e){marketError=e}
- if(market.length>=3)return market;
- try{
-  const lookup=await coinGeckoFallback(q);
-  const seen=new Set(market.map(x=>x.address));
-  return [...market,...lookup.filter(x=>!seen.has(x.address))].slice(0,12);
- }catch(e){
-  if(marketError)throw Error('All discovery providers unavailable');
-  return market;
- }
+  return parse(json.pairs||[],q);
+ })();
+ const [marketResult,catalogResult]=await Promise.allSettled([marketWork,coinGeckoFallback(q)]);
+ if(marketResult.status==='rejected'&&catalogResult.status==='rejected')
+  throw Error('All discovery providers unavailable');
+ const market=marketResult.status==='fulfilled'?marketResult.value:[];
+ const catalog=catalogResult.status==='fulfilled'?catalogResult.value:[];
+ const seen=new Set();
+ return [...catalog,...market].filter(x=>{
+  if(seen.has(x.address))return false;
+  seen.add(x.address);return true;
+ }).slice(0,12);
 }
 module.exports={normalizeQuery,parse,coinGeckoFallback,discover};

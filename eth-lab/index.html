@@ -40,6 +40,11 @@ footer{font-size:12px;color:#7f99a8;margin-top:32px}
 .candidate:hover,.candidate:focus-visible{border-color:#32d5fb;background:#12354b;outline:none}
 .candidate-title{font-weight:700;font-size:13px;overflow-wrap:anywhere}.candidate-meta{display:block;margin-top:4px;color:#9eb6c4;font-size:11px;overflow-wrap:anywhere}
 .candidate-warning{font-size:11px;color:#e6c77a;margin:0 0 10px}
+.candidate-primary{border-color:#347e8e;background:#0d2d3d}
+.candidate-primary.official{border-color:#3bae9c;background:#103b38}
+.candidate-extra{border:1px solid #254559;border-radius:12px;padding:0 10px;background:#091726}
+.candidate-extra>summary{display:list-item;cursor:pointer;padding:13px 8px;color:#a9cbe0;font-size:12px;font-weight:600}
+.candidate-extra-list{display:grid;gap:8px;padding:0 0 10px}
 @media(max-width:550px){.candidate{align-items:flex-start;flex-direction:column}}
 #identity{position:sticky;top:6px;z-index:20}
 .identity{box-shadow:0 8px 22px rgba(0,0,0,.3);backdrop-filter:blur(10px);border:1px solid #28586d;border-left:3px solid #7899b0;background:#102535;border-radius:12px;margin:10px 0;padding:12px 14px;font-size:12px;color:#d6eaf7}
@@ -263,7 +268,7 @@ function renderIdentity(identity,network){
  box.append(name,copy);
  if((confirmed||indexed)&&typeof identity.proofUrl==='string'&&/^https:\/\//.test(identity.proofUrl)){
   const url=new URL(identity.proofUrl);
-  if(['developers.circle.com','developers.uniswap.org','docs.chain.link','tether.to','api.robinhood.com','github.com','www.wbtc.network','shib.io','www.coingecko.com'].includes(url.hostname)){
+  if(['developers.circle.com','developers.uniswap.org','docs.chain.link','tether.to','api.robinhood.com','github.com','www.wbtc.network','shib.io','www.coingecko.com','docs.ondo.foundation'].includes(url.hostname)){
    const link=document.createElement('a');link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';
    link.textContent=indexed?'View CoinGecko entry ↗':'View official source ↗';box.append(link);
   }
@@ -338,12 +343,29 @@ async function scanAddress(address,network=selected(),version=searchVersion,chos
 }
 function showCandidates(data,network,version){
  const container=$('matches');container.replaceChildren();
+ const candidates=data.matches.filter(item=>
+  item.chainId===NETWORKS[network].id&&item.network===network&&EVM_ADDRESS.test(item.address));
+ // Favor an exact ticker/name match within a source-verified issuer record.
+ // A third-party catalog listing is never promoted to "official".
+ const query=$('address').value.trim().toLocaleLowerCase('en-US');
+ const exact=item=>String(item.symbol||'').toLowerCase()===query||
+  String(item.name||'').toLowerCase()===query;
+ const official=item=>item.identity?.status==='OFFICIAL_CONTRACT_MATCHED'||
+  item.identity?.status==='REGISTRY_MATCHED';
+ const main=candidates.find(item=>official(item)&&exact(item))||
+  candidates.find(item=>official(item))||
+  candidates.find(item=>exact(item)&&item.identity?.status==='INDEXED_ON_COINGECKO')||
+  candidates.find(exact)||candidates[0];
+ if(!main){container.hidden=true;return}
+ const others=candidates.filter(item=>item.address.toLowerCase()!==main.address.toLowerCase());
  const warning=document.createElement('p');warning.className='candidate-warning';
- warning.textContent='Search catalogs are candidates, not verified issuers. Always check the full '+NETWORKS[network].label+' contract.';
+ warning.textContent=official(main)?
+  'Issuer-confirmed contract shown first. Other matching contracts remain accessible below.':
+  'No issuer-confirmed contract for this search. Confirm the full '+NETWORKS[network].label+' contract before buying.';
  container.append(warning);
- for(const item of data.matches){
-  if(item.chainId!==NETWORKS[network].id||item.network!==network||!EVM_ADDRESS.test(item.address))continue;
+ function candidateElement(item,primary=false){
   const option=document.createElement('button');option.type='button';option.className='candidate';
+  if(primary)option.classList.add('candidate-primary');
   const info=document.createElement('span'),title=document.createElement('span'),meta=document.createElement('span');
   title.className='candidate-title';title.textContent=(item.name||'Unnamed token')+' ('+(item.symbol||'?')+')';
   meta.className='candidate-meta';
@@ -360,15 +382,23 @@ function showCandidates(data,network,version){
   if(!item.identity||item.identity.status==='NOT_VERIFIED')badge.classList.add('unknown');
   info.append(badge);
   const choose=document.createElement('span');choose.textContent='SCAN →';
-  const verified=item.identity?.status==='OFFICIAL_CONTRACT_MATCHED'||item.identity?.status==='REGISTRY_MATCHED';
-  if(verified)option.classList.add('official');
+  if(official(item))option.classList.add('official');
   option.append(info,choose);
   option.addEventListener('click',()=>{
    if(version!==searchVersion||network!==selected())return;
    cancelPending();$('address').value=item.address;
    void scanAddress(item.address,network,searchVersion,item.identity);
   });
-  container.append(option);
+  return option;
+ }
+ container.append(candidateElement(main,true));
+ if(others.length){
+  const expandable=document.createElement('details');expandable.className='candidate-extra';
+  const summary=document.createElement('summary');
+  summary.textContent='Show '+others.length+' other matching contracts / related tokens';
+  const content=document.createElement('div');content.className='candidate-extra-list';
+  for(const candidate of others)content.append(candidateElement(candidate));
+  expandable.append(summary,content);container.append(expandable);
  }
  container.hidden=false;
 }
@@ -392,7 +422,7 @@ async function searchOrScan(){
    data.network!==network||!Array.isArray(data.matches))throw Error(data.error||'Discovery source unavailable');
   if(!data.matches.length){$('state').textContent='No '+NETWORKS[network].label+' candidates found. Try the full contract address.';return}
   showCandidates(data,network,version);
-  $('state').textContent=data.matches.length+' contract candidate(s). Select one to scan.';
+  $('state').textContent='Showing 1 main result. '+(data.matches.length-1)+' additional matching contracts are available below.';
  }catch(error){
   if(version===searchVersion&&network===selected()&&!controller.signal.aborted)
    $('state').textContent='Token search unavailable: '+String(error.message).slice(0,140);

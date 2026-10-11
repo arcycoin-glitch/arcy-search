@@ -1,0 +1,26 @@
+name: ARCY Arc mainnet acceptance (read only)
+on:
+  push:
+    branches: [feature/three-chain-release-lab-20261011]
+    paths:
+      - '.github/workflows/three-chain-live.yml'
+      - 'eth-lab/scripts/live-arc.cjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  arc_acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    defaults:
+      run:
+        working-directory: eth-lab
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Arc token mainnet coverage
+        run: node scripts/live-arc.cjs

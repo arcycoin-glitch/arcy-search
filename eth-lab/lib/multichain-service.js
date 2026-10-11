@@ -8,6 +8,7 @@ const robinhood=require('./robinhood-adapter');
 const arc=require('./arc-adapter');
 const chains=require('./chains');
 const identities=require('./token-identity');
+const logos=require('./search-logo');
 const {createCache}=require('./discovery-cache');
 const ethereumAdapter={
  async inspectToken({address}){
@@ -56,7 +57,8 @@ async function discover({network='ethereum',query}){
   response={matches:[],fetchedAt:Date.now(),cacheAgeMs:0};
   providerError=true;
  }
- const matches=identities.rank(network,query,response.matches);
+ const ranked=identities.rank(network,query,response.matches);
+ const matches=await logos.enhance(network,ranked);
  return {ok:true,query,chainId:chains.chain(network).chainId,network,
   matches,sourceFetchedAt:new Date(response.fetchedAt).toISOString(),
   cacheAgeMs:response.cacheAgeMs,providerError,

@@ -80,14 +80,74 @@ function parseSearch(pairs,rawQuery){
   .slice(0,12).map(({address,name,symbol,chainId,network,source,identityVerified,registryMatched,logoUrl})=>
    ({address,name,symbol,chainId,network,source,identityVerified,registryMatched,logoUrl}));
 }
-async function discover(query){
- if(typeof query!=='string'||!SEARCH.test(query.trim()))throw Error('Invalid Arc name search');
+function parseGeckoSearch(body,rawQuery){
+ if(typeof rawQuery!=='string'||!SEARCH.test(rawQuery.trim())||
+  !body||typeof body!=='object')return [];
+ const query=rawQuery.trim().toLowerCase();
+ const tokenEntries=new Map(),matched=new Map();
+ for(const token of Array.isArray(body.included)?body.included.slice(0,200):[]){
+  if(token?.type!=='token')continue;
+  const id=String(token.id||'').toLowerCase();
+  if(!/^arc_0x[0-9a-f]{40}$/.test(id))continue;
+  const address=id.slice(4),name=String(token.attributes?.name||'').slice(0,90),
+   symbol=String(token.attributes?.symbol||'').slice(0,30);
+  if(!name&&!symbol)continue;
+  tokenEntries.set(id,{address,name,symbol,chainId:5042,network:'arc',
+   source:'GeckoTerminal',identityVerified:false,registryMatched:false,
+   logoUrl:safeLogoUrl(token.attributes?.image_url)});
+ }
+ for(const pool of Array.isArray(body.data)?body.data.slice(0,100):[]){
+  if(pool?.type!=='pool'||!/^arc_0x[0-9a-f]{40,64}$/i.test(String(pool.id||'')))continue;
+  for(const relation of ['base_token','quote_token']){
+   const id=String(pool.relationships?.[relation]?.data?.id||'').toLowerCase();
+   const token=tokenEntries.get(id);
+   if(!token)continue;
+   const nm=token.name.toLowerCase(),sym=token.symbol.toLowerCase();
+   if(!nm.includes(query)&&!sym.includes(query))continue;
+   const relevance=sym===query?0:nm===query?1:sym.startsWith(query)?2:nm.startsWith(query)?3:4;
+   const liquidity=Number(pool.attributes?.reserve_in_usd);
+   const amount=Number.isFinite(liquidity)&&liquidity>=0?liquidity:0;
+   const prev=matched.get(token.address);
+   if(!prev||relevance<prev.relevance||relevance===prev.relevance&&amount>prev.liquidity)
+    matched.set(token.address,{...token,relevance,liquidity:amount});
+  }
+ }
+ return [...matched.values()].sort((a,b)=>a.relevance-b.relevance||b.liquidity-a.liquidity)
+  .slice(0,12).map(({address,name,symbol,chainId,network,source,identityVerified,registryMatched,logoUrl})=>
+  ({address,name,symbol,chainId,network,source,identityVerified,registryMatched,logoUrl}));
+}
+async function dexNameSearch(query){
  const response=await fetch(SEARCH_API+encodeURIComponent(query.trim()),{
   headers:{accept:'application/json'},signal:AbortSignal.timeout(8000)});
  if(!response.ok)throw Error('Arc DexScreener discovery HTTP '+response.status);
  const body=await readJson(response,2*1024*1024);
  if(!body||typeof body!=='object'||(body.pairs!==null&&!Array.isArray(body.pairs)))
-  throw Error('Invalid Arc token discovery');
+  throw Error('Invalid Arc Dex token discovery');
  return parseSearch(body.pairs||[],query);
 }
-module.exports={parseMarket,parseSearch,inspect,discover};
+async function geckoNameSearch(query){
+ // Explicit network=arc prevents similarly named tokens on other EVM chains.
+ const url='https://api.geckoterminal.com/api/v2/search/pools?query='+
+  encodeURIComponent(query.trim())+'&network=arc&include=base_token,quote_token';
+ const res=await fetch(url,{headers:{accept:'application/json'},signal:AbortSignal.timeout(9000)});
+ if(!res.ok)throw Error('GeckoTerminal Arc search HTTP '+res.status);
+ const body=await readJson(res,2*1024*1024);
+ if(!body||!Array.isArray(body.data)||!Array.isArray(body.included))
+  throw Error('Invalid GeckoTerminal Arc search');
+ return parseGeckoSearch(body,query);
+}
+async function discover(query){
+ if(typeof query!=='string'||!SEARCH.test(query.trim()))throw Error('Invalid Arc name search');
+ const [dex,gecko]=await Promise.allSettled([dexNameSearch(query),geckoNameSearch(query)]);
+ if(dex.status==='rejected'&&gecko.status==='rejected')
+  throw Error('Arc name search sources unavailable');
+ const catalog=gecko.status==='fulfilled'?gecko.value:[],market=dex.status==='fulfilled'?dex.value:[];
+ const seen=new Set();
+ // GeckoTerminal offers an exact Arc pool-token identity for tokens that
+ // DexScreener's global search often omits. Neither makes a token "official".
+ return [...catalog,...market].filter(x=>{
+  if(seen.has(x.address))return false;
+  seen.add(x.address);return true;
+ }).slice(0,12);
+}
+module.exports={parseMarket,parseSearch,parseGeckoSearch,inspect,discover};

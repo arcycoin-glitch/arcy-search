@@ -207,6 +207,14 @@ async function main(){
    assert.match(metrics,/1\.235B/);
    assert.ok(!metrics.includes('0.000000031234'),'Small price must be compact in summary');
    assert.ok(await page.locator('.exactNumber').count()>0,'Unrounded source values stay available');
+   assert.equal(await page.locator('.proof-panel').count(),5);
+   const firstProof=page.locator('.proof-panel').first();
+   await firstProof.locator(':scope > summary').click();
+   assert.equal(await firstProof.locator('.proof-entry').count(),4);
+   assert.match(await firstProof.locator('.proof-entry').first().innerText(),/SOURCE BACKED|NOT VERIFIED/);
+   assert.equal(await firstProof.locator('.advanced-proof').getAttribute('open'),null);
+   await firstProof.locator('.advanced-proof > summary').click();
+   assert.match(await firstProof.locator('.advanced-proof pre').innerText(),/"fields"/);
    await page.waitForSelector('#chartPlot svg');
    assert.match(await page.locator('#chartNote').innerText(),/GeckoTerminal/);
    assert.equal(await page.locator('#marketLink').isVisible(),true);

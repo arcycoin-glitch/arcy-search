@@ -1,0 +1,29 @@
+# Private credentials and configuration (future untracked files)
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.p12
+*.pfx
+*.keystore
+*.privatekey
+*.secret
+.secrets/
+secrets/
+credentials/
+.npmrc
+
+# Generated artifacts
+node_modules/
+.vercel/
+dist/
+build/
+coverage/
+.nyc_output/
+*.log
+.DS_Store
+
+# Local editor files
+.vscode/
+.idea/
